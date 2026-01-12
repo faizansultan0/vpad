@@ -5,15 +5,7 @@ const app = require("./app");
 const connectDB = require("./config/db");
 const { initializeSocket } = require("./sockets");
 const { aiService } = require("./services");
-const fs = require("fs");
-const path = require("path");
-
 const PORT = process.env.PORT || 5000;
-
-const uploadsDir = path.join(__dirname, "uploads");
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
 
 const server = http.createServer(app);
 

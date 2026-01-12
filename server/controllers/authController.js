@@ -379,16 +379,13 @@ const updateProfilePicture = asyncHandler(async (req, res) => {
     );
   }
 
-  const result = await uploadToCloudinary(req.file.path, "vpad/profiles");
+  const result = await uploadToCloudinary(req.file.buffer, "vpad/profiles");
 
   const user = await User.findByIdAndUpdate(
     req.user._id,
     { profilePicture: result },
     { new: true }
   );
-
-  const fs = require("fs");
-  fs.unlink(req.file.path, () => {});
 
   res.json({
     success: true,

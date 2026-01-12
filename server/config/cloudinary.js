@@ -6,9 +6,17 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const uploadToCloudinary = async (filePath, folder = "vpad") => {
+const uploadToCloudinary = async (fileInput, folder = "vpad") => {
   try {
-    const result = await cloudinary.uploader.upload(filePath, {
+    let uploadSource = fileInput;
+
+    if (Buffer.isBuffer(fileInput)) {
+      uploadSource = `data:application/octet-stream;base64,${fileInput.toString(
+        "base64"
+      )}`;
+    }
+
+    const result = await cloudinary.uploader.upload(uploadSource, {
       folder,
       resource_type: "auto",
     });

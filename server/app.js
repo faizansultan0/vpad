@@ -2,7 +2,6 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
-const path = require("path");
 const routes = require("./routes");
 const { errorHandler, notFound } = require("./middlewares");
 
@@ -34,8 +33,6 @@ if (process.env.NODE_ENV === "development") {
 } else {
   app.use(morgan("combined"));
 }
-
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.use("/api/v1", routes);
 

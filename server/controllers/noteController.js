@@ -438,7 +438,7 @@ const uploadAttachment = asyncHandler(async (req, res) => {
     throw new AppError("Please upload a file", 400);
   }
 
-  const result = await uploadToCloudinary(req.file.path, "vpad/attachments");
+  const result = await uploadToCloudinary(req.file.buffer, "vpad/attachments");
 
   const attachment = {
     name: req.file.originalname,
@@ -450,9 +450,6 @@ const uploadAttachment = asyncHandler(async (req, res) => {
 
   note.attachments.push(attachment);
   await note.save();
-
-  const fs = require("fs");
-  fs.unlink(req.file.path, () => {});
 
   res.json({
     success: true,
