@@ -1,3 +1,4 @@
+const crypto = require("crypto");
 const {
   User,
   Note,
@@ -9,6 +10,7 @@ const {
 const { asyncHandler, AppError } = require("../middlewares");
 const { notificationService } = require("../services");
 const { getPaginationInfo } = require("../utils");
+const { sendEmail, emailTemplates } = require("../config/email");
 
 const getDashboardStats = asyncHandler(async (req, res) => {
   const [
@@ -116,7 +118,7 @@ const getUsers = asyncHandler(async (req, res) => {
 
 const getUser = asyncHandler(async (req, res) => {
   const user = await User.findById(req.params.id).select(
-    "-refreshTokens -emailVerificationToken -passwordResetToken"
+    "-refreshTokens -emailVerificationToken -passwordResetToken",
   );
 
   if (!user) {
@@ -187,7 +189,7 @@ const getAdmins = asyncHandler(async (req, res) => {
   const admins = await User.find({
     role: { $in: ["admin", "superadmin"] },
   }).select(
-    "name email role permissions createdAt lastLogin isActive profilePicture"
+    "name email role permissions createdAt lastLogin isActive profilePicture",
   );
 
   res.json({
@@ -216,6 +218,105 @@ const createAdmin = asyncHandler(async (req, res) => {
     success: true,
     message: "Admin created",
     data: { user: user.toSafeObject() },
+  });
+});
+
+const inviteAdmin = asyncHandler(async (req, res) => {
+  const { email, permissions } = req.body;
+
+  if (!email) {
+    throw new AppError("Email is required", 400);
+  }
+
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
+    if (existingUser.role === "admin" || existingUser.role === "superadmin") {
+      throw new AppError("User is already an admin", 400);
+    }
+    existingUser.role = "admin";
+    existingUser.permissions = permissions || [];
+    await existingUser.save();
+    return res.json({
+      success: true,
+      message: "Existing user promoted to admin",
+      data: { user: existingUser.toSafeObject() },
+    });
+  }
+
+  const inviteToken = crypto.randomBytes(32).toString("hex");
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(inviteToken)
+    .digest("hex");
+
+  const pendingAdmin = new User({
+    email,
+    name: "Pending Admin",
+    password: crypto.randomBytes(16).toString("hex"),
+    role: "admin",
+    permissions: permissions || [],
+    isEmailVerified: false,
+    isActive: false,
+    adminInviteToken: hashedToken,
+    adminInviteExpires: Date.now() + 48 * 60 * 60 * 1000,
+    adminInvitePermissions: permissions || [],
+  });
+
+  await pendingAdmin.save();
+
+  const adminClientUrl = process.env.ADMIN_URL || "http://localhost:3001";
+  const inviteUrl = `${adminClientUrl}/accept-invite?token=${inviteToken}`;
+
+  const emailContent = emailTemplates.adminInvite(
+    email,
+    inviteUrl,
+    permissions || [],
+  );
+  await sendEmail({
+    to: email,
+    subject: emailContent.subject,
+    html: emailContent.html,
+  });
+
+  res.status(201).json({
+    success: true,
+    message: "Admin invitation sent",
+    data: { email },
+  });
+});
+
+const acceptAdminInvite = asyncHandler(async (req, res) => {
+  const { token, name, password } = req.body;
+
+  if (!token || !name || !password) {
+    throw new AppError("Token, name, and password are required", 400);
+  }
+
+  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+  const user = await User.findOne({
+    adminInviteToken: hashedToken,
+    adminInviteExpires: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    throw new AppError("Invalid or expired invitation token", 400);
+  }
+
+  user.name = name;
+  user.password = password;
+  user.isEmailVerified = true;
+  user.isActive = true;
+  user.adminInviteToken = undefined;
+  user.adminInviteExpires = undefined;
+  user.adminInvitePermissions = undefined;
+
+  await user.save();
+
+  res.json({
+    success: true,
+    message: "Admin account setup complete. You can now login.",
+    data: { email: user.email },
   });
 });
 
@@ -341,7 +442,7 @@ const updateAnnouncement = asyncHandler(async (req, res) => {
   const announcement = await Announcement.findByIdAndUpdate(
     req.params.id,
     { title, message, type, priority, isActive, expiresAt },
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   );
 
   if (!announcement) {
@@ -376,6 +477,8 @@ module.exports = {
   deleteUser,
   getAdmins,
   createAdmin,
+  inviteAdmin,
+  acceptAdminInvite,
   updateAdminPermissions,
   removeAdmin,
   getAnnouncements,

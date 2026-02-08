@@ -1,9 +1,11 @@
 import axios from "axios";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const API_BASE_PATH = import.meta.env.VITE_API_BASE_PATH || "/api/v1";
+const BASE_URL = `${API_URL}${API_BASE_PATH}`;
 
 const api = axios.create({
-  baseURL: API_BASE_PATH,
+  baseURL: BASE_URL,
   headers: { "Content-Type": "application/json" },
 });
 
@@ -17,7 +19,7 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 api.interceptors.response.use(
@@ -36,15 +38,17 @@ api.interceptors.response.use(
           const { state } = JSON.parse(stored);
           if (state?.refreshToken) {
             const response = await axios.post(
-              `${API_BASE_PATH}/auth/refresh-token`,
+              `${BASE_URL}/auth/refresh-token`,
               {
                 refreshToken: state.refreshToken,
-              }
+              },
             );
             const { accessToken, refreshToken } = response.data.data;
             localStorage.setItem(
               "vpad-admin-auth",
-              JSON.stringify({ state: { ...state, accessToken, refreshToken } })
+              JSON.stringify({
+                state: { ...state, accessToken, refreshToken },
+              }),
             );
             originalRequest.headers.Authorization = `Bearer ${accessToken}`;
             return api(originalRequest);
@@ -56,7 +60,7 @@ api.interceptors.response.use(
       }
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;

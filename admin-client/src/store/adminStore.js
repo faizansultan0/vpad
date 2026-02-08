@@ -41,7 +41,7 @@ const useAdminStore = create((set) => ({
     const response = await api.patch(`/admin/users/${id}`, data);
     set((state) => ({
       users: state.users.map((u) =>
-        u._id === id ? response.data.data.user : u
+        u._id === id ? response.data.data.user : u,
       ),
     }));
     return response.data.data.user;
@@ -70,13 +70,18 @@ const useAdminStore = create((set) => ({
     return response.data.data.user;
   },
 
+  inviteAdmin: async (data) => {
+    const response = await api.post("/admin/admins/invite", data);
+    return response.data;
+  },
+
   updateAdminPermissions: async (id, permissions) => {
     const response = await api.patch(`/admin/admins/${id}/permissions`, {
       permissions,
     });
     set((state) => ({
       admins: state.admins.map((a) =>
-        a._id === id ? response.data.data.admin : a
+        a._id === id ? response.data.data.admin : a,
       ),
     }));
     return response.data.data.admin;
@@ -115,7 +120,7 @@ const useAdminStore = create((set) => ({
     const response = await api.patch(`/admin/announcements/${id}`, data);
     set((state) => ({
       announcements: state.announcements.map((a) =>
-        a._id === id ? response.data.data.announcement : a
+        a._id === id ? response.data.data.announcement : a,
       ),
     }));
     return response.data.data.announcement;

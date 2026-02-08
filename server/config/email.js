@@ -142,6 +142,51 @@ const emailTemplates = {
     `,
   }),
 
+  adminInvite: (email, inviteUrl, permissions) => ({
+    subject: "VPad - Admin Invitation",
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7fa; margin: 0; padding: 20px; }
+          .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
+          .header h1 { margin: 0; font-size: 28px; }
+          .content { padding: 40px 30px; }
+          .btn { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 20px 0; }
+          .permissions { background: #f8f9fa; border-radius: 8px; padding: 15px; margin: 20px 0; }
+          .permissions ul { margin: 10px 0; padding-left: 20px; }
+          .footer { background: #f8f9fa; padding: 20px; text-align: center; color: #6c757d; font-size: 14px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>📚 VPad Admin</h1>
+          </div>
+          <div class="content">
+            <h2>You've Been Invited!</h2>
+            <p>You have been invited to join VPad as an administrator.</p>
+            <div class="permissions">
+              <strong>Your permissions will include:</strong>
+              <ul>
+                ${permissions.map((p) => `<li>${p.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}</li>`).join("")}
+              </ul>
+            </div>
+            <p>Click the button below to set up your admin account:</p>
+            <center><a href="${inviteUrl}" class="btn">Accept Invitation</a></center>
+            <p style="color: #6c757d; font-size: 14px;">This invitation will expire in 48 hours. If you didn't expect this invitation, please ignore this email.</p>
+          </div>
+          <div class="footer">
+            <p>© ${new Date().getFullYear()} VPad. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+  }),
+
   announcement: (userName, title, message) => ({
     subject: `VPad - ${title}`,
     html: `

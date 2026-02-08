@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { authController } = require("../controllers");
+const { authController, adminController } = require("../controllers");
 const {
   protect,
   authValidation,
@@ -14,19 +14,20 @@ router.get("/verify-email/:token", authController.verifyEmail);
 router.post(
   "/resend-verification",
   authValidation.forgotPassword,
-  authController.resendVerification
+  authController.resendVerification,
 );
 router.post(
   "/forgot-password",
   authValidation.forgotPassword,
-  authController.forgotPassword
+  authController.forgotPassword,
 );
 router.post(
   "/reset-password/:token",
   authValidation.resetPassword,
-  authController.resetPassword
+  authController.resetPassword,
 );
 router.post("/refresh-token", authController.refreshToken);
+router.post("/accept-admin-invite", adminController.acceptAdminInvite);
 
 router.use(protect);
 
@@ -40,7 +41,7 @@ router.patch(
   "/profile-picture",
   uploadProfilePicture.single("image"),
   handleUploadError,
-  authController.updateProfilePicture
+  authController.updateProfilePicture,
 );
 router.delete("/account", authController.deleteAccount);
 

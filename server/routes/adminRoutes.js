@@ -14,7 +14,7 @@ router.use(restrictTo("admin", "superadmin"));
 router.get(
   "/dashboard",
   hasPermission("view_analytics"),
-  adminController.getDashboardStats
+  adminController.getDashboardStats,
 );
 
 router.get("/users", hasPermission("manage_users"), adminController.getUsers);
@@ -22,29 +22,30 @@ router.get(
   "/users/:id",
   hasPermission("manage_users"),
   mongoIdParam,
-  adminController.getUser
+  adminController.getUser,
 );
 router.patch(
   "/users/:id",
   hasPermission("manage_users"),
   mongoIdParam,
-  adminController.updateUser
+  adminController.updateUser,
 );
 router.delete(
   "/users/:id",
   hasPermission("manage_users"),
   mongoIdParam,
-  adminController.deleteUser
+  adminController.deleteUser,
 );
 
 router.use(restrictTo("superadmin"));
 
 router.get("/admins", adminController.getAdmins);
 router.post("/admins", adminController.createAdmin);
+router.post("/admins/invite", adminController.inviteAdmin);
 router.patch(
   "/admins/:id/permissions",
   mongoIdParam,
-  adminController.updateAdminPermissions
+  adminController.updateAdminPermissions,
 );
 router.delete("/admins/:id", mongoIdParam, adminController.removeAdmin);
 

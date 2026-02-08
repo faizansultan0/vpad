@@ -29,7 +29,7 @@ const authValidation = {
       .withMessage("Email is required")
       .isEmail()
       .withMessage("Invalid email format")
-      .normalizeEmail(),
+      .normalizeEmail({ gmail_remove_subaddress: false }),
     body("password")
       .notEmpty()
       .withMessage("Password is required")
@@ -37,7 +37,7 @@ const authValidation = {
       .withMessage("Password must be at least 8 characters")
       .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
       .withMessage(
-        "Password must contain at least one uppercase, one lowercase, and one number"
+        "Password must contain at least one uppercase, one lowercase, and one number",
       ),
     validate,
   ],
@@ -48,7 +48,7 @@ const authValidation = {
       .withMessage("Email is required")
       .isEmail()
       .withMessage("Invalid email format")
-      .normalizeEmail(),
+      .normalizeEmail({ gmail_remove_subaddress: false }),
     body("password").notEmpty().withMessage("Password is required"),
     validate,
   ],
@@ -59,7 +59,7 @@ const authValidation = {
       .withMessage("Email is required")
       .isEmail()
       .withMessage("Invalid email format")
-      .normalizeEmail(),
+      .normalizeEmail({ gmail_remove_subaddress: false }),
     validate,
   ],
   resetPassword: [
@@ -70,7 +70,7 @@ const authValidation = {
       .withMessage("Password must be at least 8 characters")
       .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
       .withMessage(
-        "Password must contain at least one uppercase, one lowercase, and one number"
+        "Password must contain at least one uppercase, one lowercase, and one number",
       ),
     validate,
   ],

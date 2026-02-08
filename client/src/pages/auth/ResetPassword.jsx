@@ -33,6 +33,14 @@ export default function ResetPassword() {
       return;
     }
 
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/;
+    if (!passwordRegex.test(formData.password)) {
+      toast.error(
+        "Password must contain at least one uppercase, one lowercase, and one number",
+      );
+      return;
+    }
+
     setIsLoading(true);
     try {
       await resetPassword(token, formData.password);

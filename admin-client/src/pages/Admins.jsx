@@ -3,6 +3,7 @@ import useAdminStore from "../store/adminStore";
 import useAuthStore from "../store/authStore";
 import toast from "react-hot-toast";
 import AddIcon from "@mui/icons-material/Add";
+import EmailIcon from "@mui/icons-material/Email";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import Avatar from "@mui/material/Avatar";
@@ -24,13 +25,16 @@ export default function Admins() {
     admins,
     fetchAdmins,
     createAdmin,
+    inviteAdmin,
     updateAdminPermissions,
     removeAdmin,
     isLoading,
   } = useAdminStore();
   const [modalOpen, setModalOpen] = useState(false);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [editingAdmin, setEditingAdmin] = useState(null);
   const [formData, setFormData] = useState({ email: "", permissions: [] });
+  const [inviteData, setInviteData] = useState({ email: "", permissions: [] });
 
   useEffect(() => {
     fetchAdmins();
@@ -96,12 +100,20 @@ export default function Admins() {
           </p>
         </div>
         {isSuperAdmin && (
-          <button
-            onClick={() => openModal()}
-            className="btn-primary flex items-center"
-          >
-            <AddIcon className="mr-1" /> Add Admin
-          </button>
+          <div className="flex space-x-3">
+            <button
+              onClick={() => setInviteModalOpen(true)}
+              className="btn-secondary flex items-center"
+            >
+              <EmailIcon className="mr-1" fontSize="small" /> Invite Admin
+            </button>
+            <button
+              onClick={() => openModal()}
+              className="btn-primary flex items-center"
+            >
+              <AddIcon className="mr-1" /> Promote User
+            </button>
+          </div>
         )}
       </div>
 
@@ -258,6 +270,103 @@ export default function Admins() {
               </button>
               <button type="submit" className="btn-primary">
                 {editingAdmin ? "Update" : "Create Admin"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </Dialog>
+
+      <Dialog
+        open={inviteModalOpen}
+        onClose={() => setInviteModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold">Invite New Admin</h2>
+            <button
+              onClick={() => setInviteModalOpen(false)}
+              className="p-2 hover:bg-gray-100 rounded-lg"
+            >
+              <CloseIcon />
+            </button>
+          </div>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              try {
+                await inviteAdmin(inviteData);
+                toast.success("Invitation sent successfully");
+                setInviteModalOpen(false);
+                setInviteData({ email: "", permissions: [] });
+                fetchAdmins();
+              } catch (error) {
+                toast.error(
+                  error.response?.data?.message || "Failed to send invitation",
+                );
+              }
+            }}
+            className="space-y-4"
+          >
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email Address
+              </label>
+              <input
+                type="email"
+                value={inviteData.email}
+                onChange={(e) =>
+                  setInviteData({ ...inviteData, email: e.target.value })
+                }
+                className="input-field"
+                placeholder="newadmin@example.com"
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                An invitation email will be sent to set up their account
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Permissions
+              </label>
+              <div className="space-y-2">
+                {allPermissions.map((perm) => (
+                  <label
+                    key={perm}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100"
+                  >
+                    <span className="text-sm capitalize">
+                      {perm.replace(/_/g, " ")}
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={inviteData.permissions.includes(perm)}
+                      onChange={() =>
+                        setInviteData((prev) => ({
+                          ...prev,
+                          permissions: prev.permissions.includes(perm)
+                            ? prev.permissions.filter((p) => p !== perm)
+                            : [...prev.permissions, perm],
+                        }))
+                      }
+                      className="w-4 h-4 text-primary-600 rounded"
+                    />
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="flex justify-end space-x-3 pt-4">
+              <button
+                type="button"
+                onClick={() => setInviteModalOpen(false)}
+                className="btn-secondary"
+              >
+                Cancel
+              </button>
+              <button type="submit" className="btn-primary">
+                Send Invitation
               </button>
             </div>
           </form>

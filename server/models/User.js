@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs"); 
+const bcrypt = require("bcryptjs");
 
 const userSchema = new mongoose.Schema(
   {
@@ -60,6 +60,9 @@ const userSchema = new mongoose.Schema(
     emailVerificationExpires: Date,
     passwordResetToken: String,
     passwordResetExpires: Date,
+    adminInviteToken: String,
+    adminInviteExpires: Date,
+    adminInvitePermissions: [String],
     refreshTokens: [
       {
         token: String,
@@ -98,7 +101,7 @@ const userSchema = new mongoose.Schema(
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
-  }
+  },
 );
 
 userSchema.index({ role: 1 });
