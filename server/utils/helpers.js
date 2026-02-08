@@ -53,7 +53,7 @@ const detectLanguage = (text) => {
 };
 
 const isRtlText = (text) => {
-  const rtlPattern = /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/;
+  const rtlPattern = /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/g;
   const rtlChars = (text.match(rtlPattern) || []).length;
   const totalChars = text.replace(/\s/g, "").length;
   return rtlChars > totalChars / 2;

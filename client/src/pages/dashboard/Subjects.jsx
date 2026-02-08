@@ -45,11 +45,14 @@ export default function Subjects() {
     instructor: "",
     color: "#f093fb",
   });
+  const [initialLoading, setInitialLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
+      setInitialLoading(true);
       if (semesters.length === 0) await fetchSemesters();
       await fetchSubjects(semesterId);
+      setInitialLoading(false);
     };
     load();
   }, [semesterId]);
@@ -60,7 +63,7 @@ export default function Subjects() {
   }, [semesters, semesterId]);
 
   const filteredSubjects = subjects.filter(
-    (s) => s.semester?._id === semesterId || s.semester === semesterId
+    (s) => s.semester?._id === semesterId || s.semester === semesterId,
   );
 
   const openModal = (subject = null) => {
@@ -142,7 +145,7 @@ export default function Subjects() {
         </button>
       </div>
 
-      {isLoading ? (
+      {isLoading || initialLoading ? (
         <div className="flex items-center justify-center h-64">
           <div className="spinner" />
         </div>

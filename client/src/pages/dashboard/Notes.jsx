@@ -32,11 +32,14 @@ export default function Notes() {
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [formData, setFormData] = useState({ title: "" });
+  const [initialLoading, setInitialLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
+      setInitialLoading(true);
       if (subjects.length === 0) await fetchSubjects();
       await fetchNotes({ subjectId });
+      setInitialLoading(false);
     };
     load();
   }, [subjectId]);
@@ -119,7 +122,7 @@ export default function Notes() {
         />
       </div>
 
-      {isLoading ? (
+      {isLoading || initialLoading ? (
         <div className="flex items-center justify-center h-64">
           <div className="spinner" />
         </div>

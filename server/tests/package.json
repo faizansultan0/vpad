@@ -1,0 +1,13 @@
+{
+  "name": "vpad-server-tests",
+  "version": "1.0.0",
+  "description": "Unit tests for VPad server",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}
