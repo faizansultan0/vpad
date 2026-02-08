@@ -26,8 +26,8 @@ const summarizeWithOpenAI = async (content, language = "en") => {
     language === "ur"
       ? "Respond in Urdu."
       : language === "mixed"
-      ? "Respond in the same language mix as the content."
-      : "Respond in English.";
+        ? "Respond in the same language mix as the content."
+        : "Respond in English.";
 
   const response = await openai.chat.completions.create({
     model: "gpt-3.5-turbo",
@@ -53,10 +53,10 @@ const summarizeWithGemini = async (content, language = "en") => {
     language === "ur"
       ? "Respond in Urdu."
       : language === "mixed"
-      ? "Respond in the same language mix as the content."
-      : "Respond in English.";
+        ? "Respond in the same language mix as the content."
+        : "Respond in English.";
 
-  const model = gemini.getGenerativeModel({ model: "gemini-pro" });
+  const model = gemini.getGenerativeModel({ model: "gemini-1.5-flash" });
   const prompt = `You are an academic assistant. Summarize the following notes concisely while preserving key information. ${langInstruction}\n\nContent:\n${content}`;
 
   const result = await model.generateContent(prompt);
@@ -68,7 +68,7 @@ const summarizeNote = async (content, language = "en") => {
 
   if (!provider) {
     throw new Error(
-      "No AI provider configured. Please set OPENAI_API_KEY or GEMINI_API_KEY."
+      "No AI provider configured. Please set OPENAI_API_KEY or GEMINI_API_KEY.",
     );
   }
 
@@ -110,7 +110,7 @@ const extractTextFromImageWithOpenAI = async (imageUrl) => {
 };
 
 const extractTextFromImageWithGemini = async (imageUrl) => {
-  const model = gemini.getGenerativeModel({ model: "gemini-pro-vision" });
+  const model = gemini.getGenerativeModel({ model: "gemini-1.5-flash" });
 
   const response = await fetch(imageUrl);
   const imageData = await response.arrayBuffer();
@@ -160,7 +160,7 @@ const generateQuizWithOpenAI = async (content, options = {}) => {
   const topicsInstruction =
     includeTopics.length > 0
       ? `Also include questions about these related topics: ${includeTopics.join(
-          ", "
+          ", ",
         )}.`
       : "";
 
@@ -200,11 +200,11 @@ const generateQuizWithGemini = async (content, options = {}) => {
   const topicsInstruction =
     includeTopics.length > 0
       ? `Also include questions about these related topics: ${includeTopics.join(
-          ", "
+          ", ",
         )}.`
       : "";
 
-  const model = gemini.getGenerativeModel({ model: "gemini-pro" });
+  const model = gemini.getGenerativeModel({ model: "gemini-1.5-flash" });
   const prompt = `You are an educational quiz generator. Create a quiz based on the provided notes. Generate ${questionCount} questions with ${difficulty} difficulty. ${topicsInstruction} Return the quiz in JSON format with this structure: { "questions": [{ "question": "...", "options": ["A", "B", "C", "D"], "correctAnswer": 0, "explanation": "...", "difficulty": "easy|medium|hard" }] }\n\nNotes:\n${content}`;
 
   const result = await model.generateContent(prompt);
