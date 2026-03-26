@@ -78,6 +78,66 @@ const attachmentSchema = new mongoose.Schema({
   },
 });
 
+const quizQuestionSchema = new mongoose.Schema(
+  {
+    question: {
+      type: String,
+      required: true,
+    },
+    options: {
+      type: [String],
+      default: [],
+    },
+    correctAnswer: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    explanation: String,
+    difficulty: {
+      type: String,
+      enum: ["easy", "medium", "hard"],
+      default: "medium",
+    },
+  },
+  { _id: false },
+);
+
+const quizAttemptSchema = new mongoose.Schema(
+  {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    answers: {
+      type: [Number],
+      default: [],
+    },
+    score: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    totalQuestions: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    percentage: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: 100,
+    },
+    submittedAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  { _id: false },
+);
+
 const noteSchema = new mongoose.Schema(
   {
     user: {
@@ -157,6 +217,15 @@ const noteSchema = new mongoose.Schema(
       text: String,
       generatedAt: Date,
       model: String,
+      sourceHash: String,
+    },
+    quiz: {
+      questions: [quizQuestionSchema],
+      generatedAt: Date,
+      model: String,
+      sourceHash: String,
+      optionsHash: String,
+      attempts: [quizAttemptSchema],
     },
     lastEditedBy: {
       type: mongoose.Schema.Types.ObjectId,

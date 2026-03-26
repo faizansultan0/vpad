@@ -65,5 +65,6 @@ router.get("/:id/history", mongoIdParam, noteController.getEditHistory);
 
 router.post("/:id/summarize", mongoIdParam, noteController.summarizeNote);
 router.post("/:id/quiz", mongoIdParam, noteController.generateQuiz);
+router.post("/:id/quiz/submit", mongoIdParam, noteController.submitQuizAttempt);
 
 module.exports = router;

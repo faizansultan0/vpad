@@ -213,14 +213,19 @@ const useNoteStore = create((set, get) => ({
     await api.delete(`/notes/${noteId}/attachment/${attachmentId}`);
   },
 
-  summarizeNote: async (id) => {
-    const response = await api.post(`/notes/${id}/summarize`);
-    return response.data.data.summary;
+  summarizeNote: async (id, options = {}) => {
+    const response = await api.post(`/notes/${id}/summarize`, options);
+    return response.data.data;
   },
 
   generateQuiz: async (id, options) => {
     const response = await api.post(`/notes/${id}/quiz`, options);
     return response.data.data.quiz;
+  },
+
+  submitQuizAttempt: async (id, answers) => {
+    const response = await api.post(`/notes/${id}/quiz/submit`, { answers });
+    return response.data.data;
   },
 
   extractText: async (imageUrl) => {

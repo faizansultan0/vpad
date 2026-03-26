@@ -53,6 +53,52 @@ const MenuButton = ({ onClick, active, disabled, children, title }) => (
   </button>
 );
 
+const renderInlineMarkdown = (text) => {
+  const chunks = text.split(/(\*\*.*?\*\*)/g);
+  return chunks.map((chunk, index) => {
+    if (chunk.startsWith("**") && chunk.endsWith("**")) {
+      return <strong key={index}>{chunk.slice(2, -2)}</strong>;
+    }
+    return <span key={index}>{chunk}</span>;
+  });
+};
+
+const renderFormattedSummary = (summaryText) => {
+  if (!summaryText) return null;
+
+  const normalizedText = summaryText.replace(/\s\*\s+/g, "\n* ");
+  const lines = normalizedText
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  return (
+    <div className="space-y-3 text-gray-800 leading-7">
+      {lines.map((line, index) => {
+        if (/^#{1,6}\s+/.test(line)) {
+          const headingText = line.replace(/^#{1,6}\s+/, "");
+          return (
+            <h3 key={index} className="text-base font-semibold text-gray-900">
+              {renderInlineMarkdown(headingText)}
+            </h3>
+          );
+        }
+
+        if (line.startsWith("* ")) {
+          return (
+            <div key={index} className="flex items-start gap-2">
+              <span className="mt-1 text-primary-600">•</span>
+              <p>{renderInlineMarkdown(line.slice(2))}</p>
+            </div>
+          );
+        }
+
+        return <p key={index}>{renderInlineMarkdown(line)}</p>;
+      })}
+    </div>
+  );
+};
+
 export default function NoteEditor() {
   const { noteId } = useParams();
   const navigate = useNavigate();
@@ -65,6 +111,7 @@ export default function NoteEditor() {
     summarizeNote,
     generateQuiz,
     uploadAttachment,
+    submitQuizAttempt,
   } = useNoteStore();
   const { connect, joinNote, leaveNote, activeUsers, on, off, emitNoteChange } =
     useSocketStore();
@@ -79,8 +126,13 @@ export default function NoteEditor() {
   const [sharePermission, setSharePermission] = useState("view");
   const [summaryModal, setSummaryModal] = useState(false);
   const [summary, setSummary] = useState("");
+  const [summaryNeedsRegeneration, setSummaryNeedsRegeneration] =
+    useState(false);
   const [quizModal, setQuizModal] = useState(false);
   const [quiz, setQuiz] = useState(null);
+  const [selectedAnswers, setSelectedAnswers] = useState({});
+  const [quizSubmitted, setQuizSubmitted] = useState(false);
+  const [quizResult, setQuizResult] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
   const fetchedRef = useRef(false);
 
@@ -185,11 +237,12 @@ export default function NoteEditor() {
     }
   };
 
-  const handleSummarize = async () => {
+  const handleSummarize = async (regenerate = false) => {
     setAiLoading(true);
     try {
-      const result = await summarizeNote(noteId);
-      setSummary(result.text);
+      const result = await summarizeNote(noteId, { regenerate });
+      setSummary(result.summary?.text || "");
+      setSummaryNeedsRegeneration(Boolean(result.needsRegeneration));
       setSummaryModal(true);
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to summarize");
@@ -198,17 +251,85 @@ export default function NoteEditor() {
     }
   };
 
-  const handleGenerateQuiz = async () => {
+  const handleGenerateQuiz = async (regenerate = false) => {
     setAiLoading(true);
     try {
       const result = await generateQuiz(noteId, {
         questionCount: 5,
         difficulty: "medium",
+        regenerate,
       });
+
+      const attempts = Array.isArray(result?.attempts) ? result.attempts : [];
+      const latestAttempt = attempts
+        .filter((attempt) => String(attempt.user) === String(user?._id))
+        .sort(
+          (first, second) =>
+            new Date(second.submittedAt) - new Date(first.submittedAt),
+        )[0];
+
       setQuiz(result);
+
+      if (latestAttempt && !regenerate) {
+        const restoredAnswers = latestAttempt.answers.reduce(
+          (accumulator, answer, index) => {
+            if (Number.isInteger(answer) && answer >= 0) {
+              accumulator[index] = answer;
+            }
+            return accumulator;
+          },
+          {},
+        );
+
+        setSelectedAnswers(restoredAnswers);
+        setQuizSubmitted(true);
+        setQuizResult(latestAttempt);
+      } else {
+        setSelectedAnswers({});
+        setQuizSubmitted(false);
+        setQuizResult(null);
+      }
+
       setQuizModal(true);
+      toast.success(regenerate ? "Quiz regenerated" : "Quiz ready");
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to generate quiz");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleSelectOption = (questionIndex, optionIndex) => {
+    if (quizSubmitted) return;
+
+    setSelectedAnswers((prev) => ({
+      ...prev,
+      [questionIndex]: optionIndex,
+    }));
+  };
+
+  const handleSubmitQuiz = async () => {
+    if (!quiz?.questions?.length) return;
+
+    const answers = quiz.questions.map((_, questionIndex) => {
+      const answer = selectedAnswers[questionIndex];
+      return Number.isInteger(answer) ? answer : -1;
+    });
+
+    if (answers.some((answer) => answer < 0)) {
+      toast.error("Please answer all questions before submitting.");
+      return;
+    }
+
+    setAiLoading(true);
+    try {
+      const result = await submitQuizAttempt(noteId, answers);
+      setQuiz(result.quiz);
+      setQuizResult(result.attempt);
+      setQuizSubmitted(true);
+      toast.success(`Submitted! Score: ${result.attempt.score}/${result.attempt.totalQuestions}`);
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to submit quiz");
     } finally {
       setAiLoading(false);
     }
@@ -581,15 +702,31 @@ export default function NoteEditor() {
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold">AI Summary</h2>
-            <button
-              onClick={() => setSummaryModal(false)}
-              className="p-2 hover:bg-gray-100 rounded-lg"
-            >
-              <CloseIcon />
-            </button>
+            <div className="flex items-center gap-2">
+              {summary && (
+                <button
+                  onClick={() => handleSummarize(true)}
+                  className="btn-secondary text-sm py-2"
+                  disabled={aiLoading}
+                >
+                  Regenerate
+                </button>
+              )}
+              <button
+                onClick={() => setSummaryModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <CloseIcon />
+              </button>
+            </div>
           </div>
-          <div className="prose max-w-none bg-gray-50 p-4 rounded-xl">
-            {summary}
+          {summaryNeedsRegeneration && (
+            <div className="mb-4 p-3 rounded-xl bg-amber-50 text-amber-800 text-sm">
+              You have new changes in this note. Click regenerate to refresh the summary.
+            </div>
+          )}
+          <div className="bg-gray-50 p-4 rounded-xl max-h-[70vh] overflow-auto">
+            {renderFormattedSummary(summary)}
           </div>
         </div>
       </Dialog>
@@ -603,13 +740,27 @@ export default function NoteEditor() {
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold">Practice Quiz</h2>
-            <button
-              onClick={() => setQuizModal(false)}
-              className="p-2 hover:bg-gray-100 rounded-lg"
-            >
-              <CloseIcon />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleGenerateQuiz(true)}
+                className="btn-secondary text-sm py-2"
+                disabled={aiLoading}
+              >
+                Regenerate
+              </button>
+              <button
+                onClick={() => setQuizModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <CloseIcon />
+              </button>
+            </div>
           </div>
+          {quizResult && (
+            <div className="mb-4 p-3 rounded-xl bg-primary-50 text-primary-800 text-sm font-medium">
+              Score: {quizResult.score}/{quizResult.totalQuestions} ({quizResult.percentage}%)
+            </div>
+          )}
           {quiz?.questions?.map((q, i) => (
             <div key={i} className="mb-6 p-4 bg-gray-50 rounded-xl">
               <p className="font-medium mb-3">
@@ -617,23 +768,42 @@ export default function NoteEditor() {
               </p>
               <div className="space-y-2">
                 {q.options?.map((opt, j) => (
-                  <div
+                  <button
                     key={j}
-                    className={`p-2 rounded-lg border ${
-                      j === q.correctAnswer
-                        ? "border-green-500 bg-green-50"
-                        : "border-gray-200"
+                    type="button"
+                    onClick={() => handleSelectOption(i, j)}
+                    className={`w-full text-left p-2 rounded-lg border transition-colors ${
+                      quizSubmitted
+                        ? j === q.correctAnswer
+                          ? "border-green-500 bg-green-50"
+                          : selectedAnswers[i] === j
+                            ? "border-red-500 bg-red-50"
+                            : "border-gray-200"
+                        : selectedAnswers[i] === j
+                          ? "border-primary-500 bg-primary-50"
+                          : "border-gray-200 hover:border-primary-300"
                     }`}
                   >
                     {String.fromCharCode(65 + j)}. {opt}
-                  </div>
+                  </button>
                 ))}
               </div>
-              {q.explanation && (
+              {quizSubmitted && q.explanation && (
                 <p className="text-sm text-gray-600 mt-2">💡 {q.explanation}</p>
               )}
             </div>
           ))}
+          {quiz?.questions?.length > 0 && !quizSubmitted && (
+            <div className="flex justify-end mt-4">
+              <button
+                onClick={handleSubmitQuiz}
+                className="btn-primary"
+                disabled={aiLoading}
+              >
+                Submit Quiz
+              </button>
+            </div>
+          )}
         </div>
       </Dialog>
     </div>

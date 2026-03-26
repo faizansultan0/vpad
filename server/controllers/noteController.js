@@ -1,3 +1,4 @@
+const crypto = require("crypto");
 const { Note, Subject, User, Comment } = require("../models");
 const { asyncHandler, AppError } = require("../middlewares");
 const { notificationService, aiService } = require("../services");
@@ -11,6 +12,44 @@ const {
   uploadToCloudinary,
   deleteFromCloudinary,
 } = require("../config/cloudinary");
+
+const buildHash = (value) => {
+  return crypto.createHash("sha256").update(value || "").digest("hex");
+};
+
+const buildQuizOptionsHash = (options = {}) => {
+  const normalized = {
+    questionCount: Number(options.questionCount) || 5,
+    difficulty: options.difficulty || "medium",
+    includeTopics: Array.isArray(options.includeTopics)
+      ? [...options.includeTopics].map((topic) => topic.trim()).sort()
+      : [],
+  };
+
+  return buildHash(JSON.stringify(normalized));
+};
+
+const normalizeQuizQuestions = (quiz) => {
+  const questions = Array.isArray(quiz?.questions) ? quiz.questions : [];
+
+  return questions
+    .map((question) => ({
+      question: question?.question,
+      options: Array.isArray(question?.options) ? question.options : [],
+      correctAnswer: Number(question?.correctAnswer),
+      explanation: question?.explanation || "",
+      difficulty: question?.difficulty || "medium",
+    }))
+    .filter(
+      (question) =>
+        typeof question.question === "string" &&
+        question.question.trim().length > 0 &&
+        question.options.length >= 2 &&
+        Number.isInteger(question.correctAnswer) &&
+        question.correctAnswer >= 0 &&
+        question.correctAnswer < question.options.length,
+    );
+};
 
 const createNote = asyncHandler(async (req, res) => {
   const { subjectId, title, content, contentType, language, tags, color } =
@@ -105,7 +144,7 @@ const getNotes = asyncHandler(async (req, res) => {
       .sort(sortOptions)
       .skip(skip)
       .limit(parseInt(limit))
-      .select("-content -editHistory"),
+      .select("-content -editHistory -quiz"),
     Note.countDocuments(query),
   ]);
 
@@ -511,6 +550,7 @@ const getEditHistory = asyncHandler(async (req, res) => {
 });
 
 const summarizeNote = asyncHandler(async (req, res) => {
+  const { regenerate = false } = req.body || {};
   const note = await Note.findById(req.params.id);
 
   if (!note) {
@@ -526,18 +566,51 @@ const summarizeNote = asyncHandler(async (req, res) => {
     throw new AppError("Note content is too short to summarize", 400);
   }
 
+  const sourceHash = buildHash(plainText);
+  const hasExistingSummary = Boolean(note.summary?.text);
+  const isSummaryUpToDate = note.summary?.sourceHash === sourceHash;
+
+  if (hasExistingSummary && isSummaryUpToDate) {
+    return res.json({
+      success: true,
+      message: "Using cached summary",
+      data: {
+        summary: note.summary,
+        cached: true,
+        needsRegeneration: false,
+      },
+    });
+  }
+
+  if (hasExistingSummary && !isSummaryUpToDate && !regenerate) {
+    return res.json({
+      success: true,
+      message: "Note content has changed. Regenerate to refresh summary.",
+      data: {
+        summary: note.summary,
+        cached: true,
+        needsRegeneration: true,
+      },
+    });
+  }
+
   const result = await aiService.summarizeNote(plainText, note.language);
 
   note.summary = {
     text: result.text,
     generatedAt: new Date(),
     model: result.model,
+    sourceHash,
   };
   await note.save();
 
   res.json({
     success: true,
-    data: { summary: note.summary },
+    data: {
+      summary: note.summary,
+      cached: false,
+      needsRegeneration: false,
+    },
   });
 });
 
@@ -560,7 +633,8 @@ const extractTextFromImage = asyncHandler(async (req, res) => {
 });
 
 const generateQuiz = asyncHandler(async (req, res) => {
-  const { questionCount, difficulty, includeTopics } = req.body;
+  const { questionCount, difficulty, includeTopics, regenerate = false } =
+    req.body;
 
   const note = await Note.findById(req.params.id);
 
@@ -577,17 +651,139 @@ const generateQuiz = asyncHandler(async (req, res) => {
     throw new AppError("Note content is too short to generate quiz", 400);
   }
 
+  const sourceHash = buildHash(plainText);
+  const optionsHash = buildQuizOptionsHash({
+    questionCount,
+    difficulty,
+    includeTopics,
+  });
+
+  const existingQuiz = note.quiz;
+  const hasCachedQuiz =
+    Array.isArray(existingQuiz?.questions) &&
+    existingQuiz.questions.length > 0 &&
+    existingQuiz.sourceHash === sourceHash &&
+    existingQuiz.optionsHash === optionsHash;
+
+  if (hasCachedQuiz && !regenerate) {
+    return res.json({
+      success: true,
+      message: "Using cached quiz",
+      data: {
+        quiz: existingQuiz,
+        model: existingQuiz.model,
+        cached: true,
+      },
+    });
+  }
+
   const result = await aiService.generateQuiz(plainText, {
     questionCount,
     difficulty,
     includeTopics,
   });
 
+  const normalizedQuestions = normalizeQuizQuestions(result.quiz);
+
+  if (normalizedQuestions.length === 0) {
+    throw new AppError("Failed to generate a valid quiz", 500);
+  }
+
+  note.quiz = {
+    questions: normalizedQuestions,
+    generatedAt: new Date(),
+    model: result.model,
+    sourceHash,
+    optionsHash,
+    attempts: [],
+  };
+
+  await note.save();
+
   res.json({
     success: true,
     data: {
-      quiz: result.quiz,
+      quiz: note.quiz,
       model: result.model,
+      cached: false,
+    },
+  });
+});
+
+const submitQuizAttempt = asyncHandler(async (req, res) => {
+  const { answers } = req.body;
+
+  const note = await Note.findById(req.params.id);
+
+  if (!note) {
+    throw new AppError("Note not found", 404);
+  }
+
+  if (!note.canUserAccess(req.user._id)) {
+    throw new AppError("Access denied", 403);
+  }
+
+  if (!Array.isArray(note.quiz?.questions) || note.quiz.questions.length === 0) {
+    throw new AppError("No generated quiz found for this note", 400);
+  }
+
+  if (!Array.isArray(answers)) {
+    throw new AppError("Answers must be an array", 400);
+  }
+
+  if (answers.length !== note.quiz.questions.length) {
+    throw new AppError("Please answer all quiz questions before submitting", 400);
+  }
+
+  const totalQuestions = note.quiz.questions.length;
+  let score = 0;
+
+  const sanitizedAnswers = answers.map((answer, index) => {
+    const parsedAnswer = Number(answer);
+    const question = note.quiz.questions[index];
+    const isValidAnswer =
+      Number.isInteger(parsedAnswer) &&
+      parsedAnswer >= 0 &&
+      parsedAnswer < question.options.length;
+
+    if (isValidAnswer && parsedAnswer === question.correctAnswer) {
+      score += 1;
+    }
+
+    return isValidAnswer ? parsedAnswer : -1;
+  });
+
+  const percentage = totalQuestions
+    ? Math.round((score / totalQuestions) * 100)
+    : 0;
+
+  const attempt = {
+    user: req.user._id,
+    answers: sanitizedAnswers,
+    score,
+    totalQuestions,
+    percentage,
+    submittedAt: new Date(),
+  };
+
+  if (!Array.isArray(note.quiz.attempts)) {
+    note.quiz.attempts = [];
+  }
+
+  note.quiz.attempts.push(attempt);
+
+  if (note.quiz.attempts.length > 100) {
+    note.quiz.attempts = note.quiz.attempts.slice(-100);
+  }
+
+  await note.save();
+
+  res.json({
+    success: true,
+    message: "Quiz submitted successfully",
+    data: {
+      attempt,
+      quiz: note.quiz,
     },
   });
 });
@@ -610,4 +806,5 @@ module.exports = {
   summarizeNote,
   extractTextFromImage,
   generateQuiz,
+  submitQuizAttempt,
 };

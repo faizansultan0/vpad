@@ -34,7 +34,7 @@ const summarizeWithOpenAI = async (content, language = "en") => {
     messages: [
       {
         role: "system",
-        content: `You are an academic assistant. Summarize the following notes concisely while preserving key information. ${langInstruction}`,
+        content: `You are an academic assistant. Summarize the following notes concisely while preserving key information. Format the response in clean markdown with short headings and bullet points for readability. ${langInstruction}`,
       },
       {
         role: "user",
@@ -57,7 +57,7 @@ const summarizeWithGemini = async (content, language = "en") => {
         : "Respond in English.";
 
   const model = gemini.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
-  const prompt = `You are an academic assistant. Summarize the following notes concisely while preserving key information. ${langInstruction}\n\nContent:\n${content}`;
+  const prompt = `You are an academic assistant. Summarize the following notes concisely while preserving key information. Format the response in clean markdown with short headings and bullet points for readability. ${langInstruction}\n\nContent:\n${content}`;
 
   const result = await model.generateContent(prompt);
   return result.response.text();
