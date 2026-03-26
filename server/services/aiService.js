@@ -56,7 +56,7 @@ const summarizeWithGemini = async (content, language = "en") => {
         ? "Respond in the same language mix as the content."
         : "Respond in English.";
 
-  const model = gemini.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const model = gemini.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
   const prompt = `You are an academic assistant. Summarize the following notes concisely while preserving key information. ${langInstruction}\n\nContent:\n${content}`;
 
   const result = await model.generateContent(prompt);
@@ -204,7 +204,7 @@ const generateQuizWithGemini = async (content, options = {}) => {
         )}.`
       : "";
 
-  const model = gemini.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const model = gemini.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
   const prompt = `You are an educational quiz generator. Create a quiz based on the provided notes. Generate ${questionCount} questions with ${difficulty} difficulty. ${topicsInstruction} Return the quiz in JSON format with this structure: { "questions": [{ "question": "...", "options": ["A", "B", "C", "D"], "correctAnswer": 0, "explanation": "...", "difficulty": "easy|medium|hard" }] }\n\nNotes:\n${content}`;
 
   const result = await model.generateContent(prompt);
