@@ -14,7 +14,10 @@ const {
 } = require("../config/cloudinary");
 
 const buildHash = (value) => {
-  return crypto.createHash("sha256").update(value || "").digest("hex");
+  return crypto
+    .createHash("sha256")
+    .update(value || "")
+    .digest("hex");
 };
 
 const buildQuizOptionsHash = (options = {}) => {
@@ -308,7 +311,7 @@ const restoreNote = asyncHandler(async (req, res) => {
   const note = await Note.findOneAndUpdate(
     { _id: req.params.id, user: req.user._id, isArchived: true },
     { isArchived: false },
-    { new: true }
+    { new: true },
   );
 
   if (!note) {
@@ -344,7 +347,7 @@ const shareNote = asyncHandler(async (req, res) => {
   }
 
   const existingCollaborator = note.collaborators.find(
-    (c) => c.user.toString() === targetUser._id.toString()
+    (c) => c.user.toString() === targetUser._id.toString(),
   );
 
   if (existingCollaborator) {
@@ -414,7 +417,7 @@ const removeCollaborator = asyncHandler(async (req, res) => {
   }
 
   note.collaborators = note.collaborators.filter(
-    (c) => c._id.toString() !== collaboratorId
+    (c) => c._id.toString() !== collaboratorId,
   );
   await note.save();
 
@@ -439,7 +442,7 @@ const handleShareOption = asyncHandler(async (req, res) => {
   }
 
   const collaborator = note.collaborators.find(
-    (c) => c.user.toString() === req.user._id.toString()
+    (c) => c.user.toString() === req.user._id.toString(),
   );
 
   if (!collaborator) {
@@ -520,7 +523,7 @@ const deleteAttachment = asyncHandler(async (req, res) => {
   }
 
   note.attachments = note.attachments.filter(
-    (a) => a._id.toString() !== attachmentId
+    (a) => a._id.toString() !== attachmentId,
   );
   await note.save();
 
@@ -633,8 +636,12 @@ const extractTextFromImage = asyncHandler(async (req, res) => {
 });
 
 const generateQuiz = asyncHandler(async (req, res) => {
-  const { questionCount, difficulty, includeTopics, regenerate = false } =
-    req.body;
+  const {
+    questionCount,
+    difficulty,
+    includeTopics,
+    regenerate = false,
+  } = req.body;
 
   const note = await Note.findById(req.params.id);
 
@@ -723,7 +730,10 @@ const submitQuizAttempt = asyncHandler(async (req, res) => {
     throw new AppError("Access denied", 403);
   }
 
-  if (!Array.isArray(note.quiz?.questions) || note.quiz.questions.length === 0) {
+  if (
+    !Array.isArray(note.quiz?.questions) ||
+    note.quiz.questions.length === 0
+  ) {
     throw new AppError("No generated quiz found for this note", 400);
   }
 
@@ -732,7 +742,10 @@ const submitQuizAttempt = asyncHandler(async (req, res) => {
   }
 
   if (answers.length !== note.quiz.questions.length) {
-    throw new AppError("Please answer all quiz questions before submitting", 400);
+    throw new AppError(
+      "Please answer all quiz questions before submitting",
+      400,
+    );
   }
 
   const totalQuestions = note.quiz.questions.length;

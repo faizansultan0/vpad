@@ -35,7 +35,7 @@ const useNoteStore = create((set, get) => ({
     const response = await api.patch(`/institutions/${id}`, data);
     set((state) => ({
       institutions: state.institutions.map((i) =>
-        i._id === id ? response.data.data.institution : i
+        i._id === id ? response.data.data.institution : i,
       ),
     }));
     return response.data.data.institution;
@@ -73,7 +73,7 @@ const useNoteStore = create((set, get) => ({
     const response = await api.patch(`/semesters/${id}`, data);
     set((state) => ({
       semesters: state.semesters.map((s) =>
-        s._id === id ? response.data.data.semester : s
+        s._id === id ? response.data.data.semester : s,
       ),
     }));
     return response.data.data.semester;
@@ -111,7 +111,7 @@ const useNoteStore = create((set, get) => ({
     const response = await api.patch(`/subjects/${id}`, data);
     set((state) => ({
       subjects: state.subjects.map((s) =>
-        s._id === id ? response.data.data.subject : s
+        s._id === id ? response.data.data.subject : s,
       ),
     }));
     return response.data.data.subject;
@@ -164,7 +164,7 @@ const useNoteStore = create((set, get) => ({
     const response = await api.patch(`/notes/${id}`, data);
     set((state) => ({
       notes: state.notes.map((n) =>
-        n._id === id ? { ...n, ...response.data.data.note } : n
+        n._id === id ? { ...n, ...response.data.data.note } : n,
       ),
       currentNote:
         state.currentNote?._id === id
@@ -193,7 +193,7 @@ const useNoteStore = create((set, get) => ({
 
   removeCollaborator: async (noteId, collaboratorId) => {
     const response = await api.delete(
-      `/notes/${noteId}/collaborator/${collaboratorId}`
+      `/notes/${noteId}/collaborator/${collaboratorId}`,
     );
     set({ currentNote: response.data.data.note });
     return response.data.data.note;

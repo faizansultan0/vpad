@@ -327,7 +327,9 @@ export default function NoteEditor() {
       setQuiz(result.quiz);
       setQuizResult(result.attempt);
       setQuizSubmitted(true);
-      toast.success(`Submitted! Score: ${result.attempt.score}/${result.attempt.totalQuestions}`);
+      toast.success(
+        `Submitted! Score: ${result.attempt.score}/${result.attempt.totalQuestions}`,
+      );
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to submit quiz");
     } finally {
@@ -362,7 +364,7 @@ export default function NoteEditor() {
   const toggleFavorite = async () => {
     await updateNote(noteId, { isFavorite: !currentNote?.isFavorite });
     toast.success(
-      currentNote?.isFavorite ? "Removed from favorites" : "Added to favorites"
+      currentNote?.isFavorite ? "Removed from favorites" : "Added to favorites",
     );
   };
 
@@ -722,7 +724,8 @@ export default function NoteEditor() {
           </div>
           {summaryNeedsRegeneration && (
             <div className="mb-4 p-3 rounded-xl bg-amber-50 text-amber-800 text-sm">
-              You have new changes in this note. Click regenerate to refresh the summary.
+              You have new changes in this note. Click regenerate to refresh the
+              summary.
             </div>
           )}
           <div className="bg-gray-50 p-4 rounded-xl max-h-[70vh] overflow-auto">
@@ -758,7 +761,8 @@ export default function NoteEditor() {
           </div>
           {quizResult && (
             <div className="mb-4 p-3 rounded-xl bg-primary-50 text-primary-800 text-sm font-medium">
-              Score: {quizResult.score}/{quizResult.totalQuestions} ({quizResult.percentage}%)
+              Score: {quizResult.score}/{quizResult.totalQuestions} (
+              {quizResult.percentage}%)
             </div>
           )}
           {quiz?.questions?.map((q, i) => (

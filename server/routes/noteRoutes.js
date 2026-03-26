@@ -27,7 +27,7 @@ router
 router.delete(
   "/:id/permanent",
   mongoIdParam,
-  noteController.permanentDeleteNote
+  noteController.permanentDeleteNote,
 );
 router.post("/:id/restore", mongoIdParam, noteController.restoreNote);
 
@@ -35,17 +35,17 @@ router.post("/:id/share", noteValidation.share, noteController.shareNote);
 router.patch(
   "/:id/collaborator",
   mongoIdParam,
-  noteController.updateCollaborator
+  noteController.updateCollaborator,
 );
 router.delete(
   "/:id/collaborator/:collaboratorId",
   mongoIdParam,
-  noteController.removeCollaborator
+  noteController.removeCollaborator,
 );
 router.post(
   "/:id/share-option",
   mongoIdParam,
-  noteController.handleShareOption
+  noteController.handleShareOption,
 );
 
 router.post(
@@ -53,12 +53,12 @@ router.post(
   mongoIdParam,
   uploadImage.single("file"),
   handleUploadError,
-  noteController.uploadAttachment
+  noteController.uploadAttachment,
 );
 router.delete(
   "/:id/attachment/:attachmentId",
   mongoIdParam,
-  noteController.deleteAttachment
+  noteController.deleteAttachment,
 );
 
 router.get("/:id/history", mongoIdParam, noteController.getEditHistory);
