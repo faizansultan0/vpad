@@ -31,6 +31,12 @@ const generateRandomToken = (length = 32) => {
   return crypto.randomBytes(length).toString("hex");
 };
 
+const generateOTP = (length = 6) => {
+  const max = 10 ** length;
+  const otp = crypto.randomInt(0, max).toString().padStart(length, "0");
+  return otp;
+};
+
 const generateVerificationToken = () => {
   const token = generateRandomToken(32);
   const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
@@ -56,6 +62,7 @@ module.exports = {
   verifyAccessToken,
   verifyRefreshToken,
   generateRandomToken,
+  generateOTP,
   generateVerificationToken,
   generatePasswordResetToken,
   hashToken,

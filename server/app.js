@@ -18,6 +18,7 @@ app.use(
     origin: [
       process.env.CLIENT_URL || "http://localhost:3000",
       process.env.ADMIN_URL || "http://localhost:3001",
+      "http://localhost:3002",
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],

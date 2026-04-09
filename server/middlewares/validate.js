@@ -62,6 +62,32 @@ const authValidation = {
       .normalizeEmail({ gmail_remove_subaddress: false }),
     validate,
   ],
+  verifySignupOtp: [
+    body("email")
+      .trim()
+      .notEmpty()
+      .withMessage("Email is required")
+      .isEmail()
+      .withMessage("Invalid email format")
+      .normalizeEmail({ gmail_remove_subaddress: false }),
+    body("otp")
+      .trim()
+      .notEmpty()
+      .withMessage("Verification code is required")
+      .matches(/^\d{6}$/)
+      .withMessage("Verification code must be 6 digits"),
+    validate,
+  ],
+  resendSignupOtp: [
+    body("email")
+      .trim()
+      .notEmpty()
+      .withMessage("Email is required")
+      .isEmail()
+      .withMessage("Invalid email format")
+      .normalizeEmail({ gmail_remove_subaddress: false }),
+    validate,
+  ],
   resetPassword: [
     body("password")
       .notEmpty()

@@ -30,6 +30,45 @@ const sendEmail = async ({ to, subject, html, text }) => {
 };
 
 const emailTemplates = {
+  verifyEmailOtp: (name, otp, expiresInMinutes = 10) => ({
+    subject: "VPad - Your Verification Code",
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7fa; margin: 0; padding: 20px; }
+          .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
+          .header h1 { margin: 0; font-size: 28px; }
+          .content { padding: 40px 30px; }
+          .otp-box { background: #f8f9ff; border: 1px dashed #667eea; border-radius: 10px; padding: 18px; text-align: center; margin: 20px 0; }
+          .otp-code { letter-spacing: 8px; font-size: 30px; font-weight: 700; color: #2f3f8f; }
+          .footer { background: #f8f9fa; padding: 20px; text-align: center; color: #6c757d; font-size: 14px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>📚 VPad</h1>
+          </div>
+          <div class="content">
+            <h2>Hi ${name},</h2>
+            <p>Use the following verification code to complete your signup:</p>
+            <div class="otp-box">
+              <div class="otp-code">${otp}</div>
+            </div>
+            <p style="color: #6c757d; font-size: 14px;">This code expires in ${expiresInMinutes} minutes. For your security, never share this code with anyone.</p>
+          </div>
+          <div class="footer">
+            <p>© ${new Date().getFullYear()} VPad. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+  }),
+
   verifyEmail: (name, verificationUrl) => ({
     subject: "VPad - Verify Your Email",
     html: `

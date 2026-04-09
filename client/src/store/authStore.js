@@ -140,6 +140,37 @@ const useAuthStore = create(
         return response.data;
       },
 
+      verifySignupOtp: async (email, otp) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await api.post("/auth/verify-signup-otp", {
+            email,
+            otp,
+          });
+          const { user, accessToken, refreshToken } = response.data.data;
+          set({
+            user,
+            accessToken,
+            refreshToken,
+            isAuthenticated: true,
+            isLoading: false,
+          });
+          return response.data;
+        } catch (error) {
+          set({
+            isLoading: false,
+            error:
+              error.response?.data?.message || "Failed to verify signup code",
+          });
+          throw error;
+        }
+      },
+
+      resendSignupOtp: async (email) => {
+        const response = await api.post("/auth/resend-signup-otp", { email });
+        return response.data;
+      },
+
       resetPassword: async (token, password) => {
         const response = await api.post(`/auth/reset-password/${token}`, {
           password,

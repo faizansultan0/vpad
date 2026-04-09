@@ -4,12 +4,13 @@ import toast from "react-hot-toast";
 import SearchIcon from "@mui/icons-material/Search";
 import BlockIcon from "@mui/icons-material/Block";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import Avatar from "@mui/material/Avatar";
 import Dialog from "@mui/material/Dialog";
 import { format } from "date-fns";
 
 export default function Users() {
-  const { users, pagination, fetchUsers, updateUser, isLoading } =
+  const { users, pagination, fetchUsers, updateUser, deleteUser, isLoading } =
     useAdminStore();
   const [search, setSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState(null);
@@ -29,6 +30,24 @@ export default function Users() {
       toast.success(`User ${user.isActive ? "deactivated" : "activated"}`);
     } catch (error) {
       toast.error("Failed to update user");
+    }
+  };
+
+  const handleDeleteUser = async (user) => {
+    const confirmed = window.confirm(
+      `Delete ${user.name} permanently? This cannot be undone.`,
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await deleteUser(user._id);
+      if (selectedUser?._id === user._id) {
+        setSelectedUser(null);
+      }
+      toast.success("User deleted permanently");
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to delete user");
     }
   };
 
@@ -141,6 +160,13 @@ export default function Users() {
                           ) : (
                             <CheckCircleIcon fontSize="small" />
                           )}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUser(user)}
+                          className="p-2 rounded-lg hover:bg-red-50 text-red-600"
+                          title="Delete Permanently"
+                        >
+                          <DeleteForeverIcon fontSize="small" />
                         </button>
                       </div>
                     </td>

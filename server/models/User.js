@@ -108,6 +108,7 @@ userSchema.index({ role: 1 });
 userSchema.index({ createdAt: -1 });
 
 userSchema.pre("save", async function (next) {
+  if (this.$locals?.skipPasswordHash) return next();
   if (!this.isModified("password")) return next();
   this.password = await bcrypt.hash(this.password, 12);
   next();

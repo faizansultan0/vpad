@@ -6,6 +6,8 @@ const {
   Institution,
   Semester,
   Subject,
+  Comment,
+  Notification,
 } = require("../models");
 const { asyncHandler, AppError } = require("../middlewares");
 const { notificationService } = require("../services");
@@ -175,13 +177,53 @@ const deleteUser = asyncHandler(async (req, res) => {
     throw new AppError("Cannot delete superadmin", 403);
   }
 
-  user.isActive = false;
-  user.refreshTokens = [];
-  await user.save();
+  if (user._id.toString() === req.user._id.toString()) {
+    throw new AppError("You cannot delete your own account", 403);
+  }
+
+  const userId = user._id;
+
+  await Promise.all([
+    User.findByIdAndDelete(userId),
+    Institution.deleteMany({ user: userId }),
+    Semester.deleteMany({ user: userId }),
+    Subject.deleteMany({ user: userId }),
+    Note.deleteMany({ user: userId }),
+    Comment.deleteMany({ user: userId }),
+    Announcement.deleteMany({ admin: userId }),
+    Notification.deleteMany({
+      $or: [{ recipient: userId }, { sender: userId }],
+    }),
+    Note.updateMany(
+      { "collaborators.user": userId },
+      { $pull: { collaborators: { user: userId } } },
+    ),
+    Note.updateMany(
+      { "editHistory.user": userId },
+      { $pull: { editHistory: { user: userId } } },
+    ),
+    Note.updateMany(
+      { "quiz.attempts.user": userId },
+      { $pull: { "quiz.attempts": { user: userId } } },
+    ),
+    Note.updateMany({ lastEditedBy: userId }, { $unset: { lastEditedBy: "" } }),
+    Comment.updateMany(
+      { mentions: userId },
+      { $pull: { mentions: userId } },
+    ),
+    Comment.updateMany(
+      { "reactions.user": userId },
+      { $pull: { reactions: { user: userId } } },
+    ),
+    Announcement.updateMany(
+      { "readBy.user": userId },
+      { $pull: { readBy: { user: userId } } },
+    ),
+  ]);
 
   res.json({
     success: true,
-    message: "User deactivated",
+    message: "User deleted permanently",
   });
 });
 

@@ -1,7 +1,9 @@
-const { User } = require("../models");
+const bcrypt = require("bcryptjs");
+const { User, PendingSignup } = require("../models");
 const { asyncHandler, AppError } = require("../middlewares");
 const {
   generateTokens,
+  generateOTP,
   generateVerificationToken,
   generatePasswordResetToken,
   hashToken,
@@ -9,38 +11,256 @@ const {
 } = require("../utils");
 const { sendEmail, emailTemplates } = require("../config/email");
 
+const SIGNUP_OTP_LENGTH = parseInt(process.env.SIGNUP_OTP_LENGTH || "6", 10);
+const SIGNUP_OTP_EXPIRY_MS = parseInt(
+  process.env.SIGNUP_OTP_EXPIRY_MS || "600000",
+  10,
+);
+const SIGNUP_OTP_RESEND_COOLDOWN_MS = parseInt(
+  process.env.SIGNUP_OTP_RESEND_COOLDOWN_MS || "30000",
+  10,
+);
+const SIGNUP_OTP_MAX_ATTEMPTS = parseInt(
+  process.env.SIGNUP_OTP_MAX_ATTEMPTS || "5",
+  10,
+);
+const SIGNUP_OTP_LOCK_MS = parseInt(
+  process.env.SIGNUP_OTP_LOCK_MS || "600000",
+  10,
+);
+const PENDING_SIGNUP_TTL_MS = parseInt(
+  process.env.PENDING_SIGNUP_TTL_MS || "86400000",
+  10,
+);
+
+const generateFreshSignupOtp = (previousOtpHash) => {
+  let otp = generateOTP(SIGNUP_OTP_LENGTH);
+  let otpHash = hashToken(otp);
+  let attempts = 0;
+
+  while (previousOtpHash && otpHash === previousOtpHash && attempts < 5) {
+    otp = generateOTP(SIGNUP_OTP_LENGTH);
+    otpHash = hashToken(otp);
+    attempts += 1;
+  }
+
+  return { otp, otpHash };
+};
+
 const register = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
+  const normalizedEmail = email.toLowerCase().trim();
 
-  const existingUser = await User.findOne({ email });
+  const existingUser = await User.findOne({ email: normalizedEmail });
   if (existingUser) {
     throw new AppError("Email already registered", 400);
   }
 
-  const { token, hashedToken, expires } = generateVerificationToken();
+  const now = Date.now();
+  const pendingSignup = await PendingSignup.findOne({ email: normalizedEmail });
 
-  const user = await User.create({
+  if (
+    pendingSignup?.resendAvailableAt &&
+    pendingSignup.resendAvailableAt.getTime() > now
+  ) {
+    const waitSeconds = Math.ceil(
+      (pendingSignup.resendAvailableAt.getTime() - now) / 1000,
+    );
+    throw new AppError(
+      `Please wait ${waitSeconds}s before requesting another code`,
+      429,
+    );
+  }
+
+  const { otp, otpHash } = generateFreshSignupOtp(pendingSignup?.otpHash);
+  const otpExpiresAt = new Date(now + SIGNUP_OTP_EXPIRY_MS);
+  const resendAvailableAt = new Date(now + SIGNUP_OTP_RESEND_COOLDOWN_MS);
+  const expiresAt = new Date(now + PENDING_SIGNUP_TTL_MS);
+  const passwordHash = await bcrypt.hash(password, 12);
+
+  const template = emailTemplates.verifyEmailOtp(
     name,
-    email,
-    password,
-    emailVerificationToken: hashedToken,
-    emailVerificationExpires: expires,
-  });
-
-  const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${token}`;
-  const template = emailTemplates.verifyEmail(name, verificationUrl);
+    otp,
+    Math.ceil(SIGNUP_OTP_EXPIRY_MS / 60000),
+  );
 
   await sendEmail({
-    to: email,
+    to: normalizedEmail,
     ...template,
   });
+
+  await PendingSignup.findOneAndUpdate(
+    { email: normalizedEmail },
+    {
+      name,
+      email: normalizedEmail,
+      passwordHash,
+      otpHash,
+      otpExpiresAt,
+      resendAvailableAt,
+      failedAttempts: 0,
+      lockedUntil: undefined,
+      expiresAt,
+    },
+    {
+      upsert: true,
+      new: true,
+      setDefaultsOnInsert: true,
+    },
+  );
 
   res.status(201).json({
     success: true,
     message:
-      "Registration successful. Please check your email to verify your account.",
+      "Signup started. Enter the verification code sent to your email.",
+    data: {
+      email: normalizedEmail,
+      otpLength: SIGNUP_OTP_LENGTH,
+      expiresAt: otpExpiresAt,
+      resendAvailableAt,
+    },
+  });
+});
+
+const verifySignupOtp = asyncHandler(async (req, res) => {
+  const { email, otp } = req.body;
+  const normalizedEmail = email.toLowerCase().trim();
+
+  const pendingSignup = await PendingSignup.findOne({ email: normalizedEmail });
+  if (!pendingSignup) {
+    throw new AppError("No pending signup found for this email", 404);
+  }
+
+  const now = Date.now();
+
+  if (pendingSignup.lockedUntil && pendingSignup.lockedUntil.getTime() > now) {
+    const waitSeconds = Math.ceil((pendingSignup.lockedUntil.getTime() - now) / 1000);
+    throw new AppError(
+      `Too many incorrect attempts. Try again in ${waitSeconds}s`,
+      429,
+    );
+  }
+
+  if (pendingSignup.otpExpiresAt.getTime() <= now) {
+    throw new AppError("Verification code expired. Please resend a new code", 400);
+  }
+
+  const submittedOtpHash = hashToken(String(otp));
+  if (submittedOtpHash !== pendingSignup.otpHash) {
+    pendingSignup.failedAttempts += 1;
+
+    if (pendingSignup.failedAttempts >= SIGNUP_OTP_MAX_ATTEMPTS) {
+      pendingSignup.lockedUntil = new Date(now + SIGNUP_OTP_LOCK_MS);
+    }
+
+    await pendingSignup.save();
+
+    if (
+      pendingSignup.lockedUntil &&
+      pendingSignup.lockedUntil.getTime() > now
+    ) {
+      throw new AppError(
+        "Too many incorrect attempts. Please request a new verification code",
+        429,
+      );
+    }
+
+    throw new AppError("Invalid verification code", 400);
+  }
+
+  const alreadyRegistered = await User.findOne({ email: normalizedEmail });
+  if (alreadyRegistered) {
+    await PendingSignup.deleteOne({ _id: pendingSignup._id });
+    throw new AppError("Email already registered. Please login instead", 400);
+  }
+
+  const user = new User({
+    name: pendingSignup.name,
+    email: pendingSignup.email,
+    password: pendingSignup.passwordHash,
+    isEmailVerified: true,
+  });
+
+  user.$locals = { ...user.$locals, skipPasswordHash: true };
+  await user.save();
+
+  const tokens = generateTokens(user._id);
+  user.refreshTokens.push({ token: tokens.refreshToken });
+  user.lastLogin = new Date();
+  await user.save();
+
+  await PendingSignup.deleteOne({ _id: pendingSignup._id });
+
+  res.json({
+    success: true,
+    message: "Email verified successfully",
     data: {
       user: user.toSafeObject(),
+      ...tokens,
+    },
+  });
+});
+
+const resendSignupOtp = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  const normalizedEmail = email.toLowerCase().trim();
+  const now = Date.now();
+
+  const existingUser = await User.findOne({ email: normalizedEmail });
+  if (existingUser) {
+    throw new AppError("Email already registered", 400);
+  }
+
+  const pendingSignup = await PendingSignup.findOne({ email: normalizedEmail });
+  if (!pendingSignup) {
+    throw new AppError("No pending signup found. Please sign up again", 404);
+  }
+
+  if (
+    pendingSignup.resendAvailableAt &&
+    pendingSignup.resendAvailableAt.getTime() > now
+  ) {
+    const waitSeconds = Math.ceil(
+      (pendingSignup.resendAvailableAt.getTime() - now) / 1000,
+    );
+    throw new AppError(
+      `Please wait ${waitSeconds}s before requesting another code`,
+      429,
+    );
+  }
+
+  const { otp, otpHash } = generateFreshSignupOtp(pendingSignup.otpHash);
+  const otpExpiresAt = new Date(now + SIGNUP_OTP_EXPIRY_MS);
+  const resendAvailableAt = new Date(now + SIGNUP_OTP_RESEND_COOLDOWN_MS);
+  const expiresAt = new Date(now + PENDING_SIGNUP_TTL_MS);
+
+  const template = emailTemplates.verifyEmailOtp(
+    pendingSignup.name,
+    otp,
+    Math.ceil(SIGNUP_OTP_EXPIRY_MS / 60000),
+  );
+
+  await sendEmail({
+    to: normalizedEmail,
+    ...template,
+  });
+
+  pendingSignup.otpHash = otpHash;
+  pendingSignup.otpExpiresAt = otpExpiresAt;
+  pendingSignup.resendAvailableAt = resendAvailableAt;
+  pendingSignup.failedAttempts = 0;
+  pendingSignup.lockedUntil = undefined;
+  pendingSignup.expiresAt = expiresAt;
+  await pendingSignup.save();
+
+  res.json({
+    success: true,
+    message: "Verification code sent",
+    data: {
+      email: normalizedEmail,
+      otpLength: SIGNUP_OTP_LENGTH,
+      expiresAt: otpExpiresAt,
+      resendAvailableAt,
     },
   });
 });
@@ -112,9 +332,19 @@ const resendVerification = asyncHandler(async (req, res) => {
 
 const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
+  const normalizedEmail = email.toLowerCase().trim();
 
-  const user = await User.findOne({ email }).select("+password");
+  const user = await User.findOne({ email: normalizedEmail }).select(
+    "+password",
+  );
   if (!user) {
+    const pendingSignup = await PendingSignup.findOne({ email: normalizedEmail });
+    if (pendingSignup) {
+      throw new AppError(
+        "Please verify your email with the code sent to your inbox",
+        401,
+      );
+    }
     throw new AppError("Invalid email or password", 401);
   }
 
@@ -418,6 +648,8 @@ const deleteAccount = asyncHandler(async (req, res) => {
 
 module.exports = {
   register,
+  verifySignupOtp,
+  resendSignupOtp,
   verifyEmail,
   resendVerification,
   login,

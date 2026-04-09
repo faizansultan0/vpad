@@ -1,18 +1,64 @@
-import { useEffect, useState, useRef } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuthStore } from "../../store";
+import toast from "react-hot-toast";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ErrorIcon from "@mui/icons-material/Error";
+import MarkEmailReadIcon from "@mui/icons-material/MarkEmailRead";
+
+const OTP_LENGTH = 6;
+const OPTIMISTIC_RESEND_COOLDOWN_SECONDS = 30;
+
+const secondsUntil = (dateLike) => {
+  if (!dateLike) return 0;
+  const target = new Date(dateLike).getTime();
+  if (Number.isNaN(target)) return 0;
+  const diff = target - Date.now();
+  return diff > 0 ? Math.ceil(diff / 1000) : 0;
+};
 
 export default function VerifyEmail() {
   const { token } = useParams();
-  const { verifyEmail } = useAuthStore();
-  const [status, setStatus] = useState("verifying");
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { verifyEmail, verifySignupOtp, resendSignupOtp, isLoading } =
+    useAuthStore();
+  const [status, setStatus] = useState(token ? "verifying" : "idle");
   const [error, setError] = useState("");
+  const [otp, setOtp] = useState("");
+  const [email] = useState(
+    location.state?.email || sessionStorage.getItem("vpad_signup_email") || "",
+  );
+  const [expiresAt, setExpiresAt] = useState(
+    location.state?.expiresAt ||
+      sessionStorage.getItem("vpad_signup_otp_expires_at") ||
+      null,
+  );
+  const [resendAvailableAt, setResendAvailableAt] = useState(
+    location.state?.resendAvailableAt ||
+      sessionStorage.getItem("vpad_signup_otp_resend_at") ||
+      null,
+  );
+  const [resendSeconds, setResendSeconds] = useState(
+    secondsUntil(
+      location.state?.resendAvailableAt ||
+        sessionStorage.getItem("vpad_signup_otp_resend_at"),
+    ),
+  );
+  const [expirySeconds, setExpirySeconds] = useState(
+    secondsUntil(
+      location.state?.expiresAt ||
+        sessionStorage.getItem("vpad_signup_otp_expires_at"),
+    ),
+  );
+  const [isResendRequesting, setIsResendRequesting] = useState(false);
   const verificationAttempted = useRef(false);
+  const resendRequestLock = useRef(false);
 
   useEffect(() => {
+    if (!token) return;
+
     if (verificationAttempted.current) return;
     verificationAttempted.current = true;
 
@@ -27,6 +73,188 @@ export default function VerifyEmail() {
     };
     verify();
   }, [token, verifyEmail]);
+
+  useEffect(() => {
+    if (token) return;
+
+    const timer = setInterval(() => {
+      setResendSeconds(secondsUntil(resendAvailableAt));
+      setExpirySeconds(secondsUntil(expiresAt));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [token, resendAvailableAt, expiresAt]);
+
+  const handleOtpSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!email) {
+      setError("No signup email found. Please register again.");
+      return;
+    }
+
+    if (!/^\d{6}$/.test(otp)) {
+      setError("Enter a valid 6-digit verification code.");
+      return;
+    }
+
+    try {
+      await verifySignupOtp(email, otp);
+      sessionStorage.removeItem("vpad_signup_email");
+      sessionStorage.removeItem("vpad_signup_otp_expires_at");
+      sessionStorage.removeItem("vpad_signup_otp_resend_at");
+      toast.success("Email verified successfully");
+      navigate("/dashboard", { replace: true });
+    } catch (err) {
+      setError(err.response?.data?.message || "Verification failed");
+    }
+  };
+
+  const handleResend = async () => {
+    if (!email || resendSeconds > 0 || resendRequestLock.current) return;
+
+    const previousResendAt = resendAvailableAt;
+    const optimisticResendAt = new Date(
+      Date.now() + OPTIMISTIC_RESEND_COOLDOWN_SECONDS * 1000,
+    ).toISOString();
+
+    resendRequestLock.current = true;
+    setIsResendRequesting(true);
+    setResendAvailableAt(optimisticResendAt);
+    setResendSeconds(OPTIMISTIC_RESEND_COOLDOWN_SECONDS);
+    sessionStorage.setItem("vpad_signup_otp_resend_at", optimisticResendAt);
+
+    try {
+      const response = await resendSignupOtp(email);
+      const payload = response?.data || {};
+
+      if (payload.resendAvailableAt) {
+        setResendAvailableAt(payload.resendAvailableAt);
+        sessionStorage.setItem(
+          "vpad_signup_otp_resend_at",
+          payload.resendAvailableAt,
+        );
+      }
+
+      if (payload.expiresAt) {
+        setExpiresAt(payload.expiresAt);
+        sessionStorage.setItem("vpad_signup_otp_expires_at", payload.expiresAt);
+      }
+
+      setOtp("");
+      setError("");
+      toast.success("New verification code sent");
+    } catch (err) {
+      setResendAvailableAt(previousResendAt || null);
+      setResendSeconds(secondsUntil(previousResendAt));
+      if (previousResendAt) {
+        sessionStorage.setItem("vpad_signup_otp_resend_at", previousResendAt);
+      } else {
+        sessionStorage.removeItem("vpad_signup_otp_resend_at");
+      }
+      setError(err.response?.data?.message || "Failed to resend code");
+    } finally {
+      resendRequestLock.current = false;
+      setIsResendRequesting(false);
+    }
+  };
+
+  if (!token) {
+    return (
+      <div className="min-h-[calc(100vh-200px)] flex items-center justify-center py-12 px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-md"
+        >
+          <div className="card">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 rounded-full bg-primary-50 flex items-center justify-center mx-auto mb-4">
+                <MarkEmailReadIcon className="text-primary-600" fontSize="large" />
+              </div>
+              <h1 className="text-2xl font-semibold text-gray-900">
+                Verify Your Email
+              </h1>
+              <p className="text-gray-600 mt-2">
+                Enter the {OTP_LENGTH}-digit code sent to
+              </p>
+              <p className="font-medium text-gray-900 break-all">{email || "-"}</p>
+            </div>
+
+            {!email ? (
+              <div className="text-center">
+                <p className="text-red-600 mb-4">
+                  Missing signup details. Please start registration again.
+                </p>
+                <Link to="/register" className="btn-primary inline-block">
+                  Go to Sign Up
+                </Link>
+              </div>
+            ) : (
+              <form onSubmit={handleOtpSubmit} className="space-y-5">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Verification Code
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={OTP_LENGTH}
+                    value={otp}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, "").slice(0, OTP_LENGTH);
+                      setOtp(value);
+                      if (error) setError("");
+                    }}
+                    className="input-field text-center tracking-[0.6em] font-semibold text-lg"
+                    placeholder={"0".repeat(OTP_LENGTH)}
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    {expirySeconds > 0
+                      ? `Code expires in ${expirySeconds}s`
+                      : "Code expired. Please resend a new code."}
+                  </p>
+                </div>
+
+                {error && (
+                  <div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                    {error}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="btn-primary w-full flex items-center justify-center"
+                >
+                  {isLoading ? <div className="spinner w-5 h-5" /> : "Verify Code"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={isLoading || isResendRequesting || resendSeconds > 0}
+                  className="btn-secondary w-full disabled:opacity-60"
+                >
+                  {isResendRequesting
+                    ? "Sending new code..."
+                    : resendSeconds > 0
+                    ? `Resend Code in ${resendSeconds}s`
+                    : "Resend Code"}
+                </button>
+
+                <div className="text-center text-sm text-gray-500">
+                  Wrong email? <Link to="/register" className="text-primary-600">Register again</Link>
+                </div>
+              </form>
+            )}
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[calc(100vh-200px)] flex items-center justify-center py-12 px-4">

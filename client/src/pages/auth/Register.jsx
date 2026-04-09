@@ -34,15 +34,31 @@ export default function Register() {
     }
 
     try {
-      await register({
+      const response = await register({
         name: formData.name,
         email: formData.email,
         password: formData.password,
       });
-      toast.success(
-        "Registration successful! Please check your email to verify your account."
-      );
-      navigate("/login");
+      const otpData = response?.data || {};
+      sessionStorage.setItem("vpad_signup_email", otpData.email || formData.email);
+      if (otpData.expiresAt) {
+        sessionStorage.setItem("vpad_signup_otp_expires_at", otpData.expiresAt);
+      }
+      if (otpData.resendAvailableAt) {
+        sessionStorage.setItem(
+          "vpad_signup_otp_resend_at",
+          otpData.resendAvailableAt,
+        );
+      }
+
+      toast.success("Verification code sent. Check your email inbox.");
+      navigate("/verify-email", {
+        state: {
+          email: otpData.email || formData.email,
+          expiresAt: otpData.expiresAt,
+          resendAvailableAt: otpData.resendAvailableAt,
+        },
+      });
     } catch (error) {
       toast.error(error.response?.data?.message || "Registration failed");
     }

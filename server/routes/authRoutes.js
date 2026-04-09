@@ -4,25 +4,46 @@ const { authController, adminController } = require("../controllers");
 const {
   protect,
   authValidation,
+  authLimiter,
   uploadProfilePicture,
   handleUploadError,
 } = require("../middlewares");
 
-router.post("/register", authValidation.register, authController.register);
-router.post("/login", authValidation.login, authController.login);
+router.post(
+  "/register",
+  authLimiter,
+  authValidation.register,
+  authController.register,
+);
+router.post(
+  "/verify-signup-otp",
+  authLimiter,
+  authValidation.verifySignupOtp,
+  authController.verifySignupOtp,
+);
+router.post(
+  "/resend-signup-otp",
+  authLimiter,
+  authValidation.resendSignupOtp,
+  authController.resendSignupOtp,
+);
+router.post("/login", authLimiter, authValidation.login, authController.login);
 router.get("/verify-email/:token", authController.verifyEmail);
 router.post(
   "/resend-verification",
+  authLimiter,
   authValidation.forgotPassword,
   authController.resendVerification,
 );
 router.post(
   "/forgot-password",
+  authLimiter,
   authValidation.forgotPassword,
   authController.forgotPassword,
 );
 router.post(
   "/reset-password/:token",
+  authLimiter,
   authValidation.resetPassword,
   authController.resetPassword,
 );
