@@ -49,7 +49,6 @@ const pendingSignupSchema = new mongoose.Schema(
   },
 );
 
-pendingSignupSchema.index({ email: 1 }, { unique: true });
 pendingSignupSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 module.exports = mongoose.model("PendingSignup", pendingSignupSchema);

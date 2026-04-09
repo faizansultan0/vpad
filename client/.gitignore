@@ -4,8 +4,6 @@ dist/
 .env.local
 *.log
 .DS_Store
-package-lock.json
-
 # Playwright
 /test-results/
 /playwright-report/
