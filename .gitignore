@@ -39,3 +39,6 @@ blob-report/
 
 # Jest
 jest-results/
+
+# Lock files
+**/package-lock.json
