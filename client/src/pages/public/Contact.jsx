@@ -11,8 +11,8 @@ const contactInfo = [
   {
     icon: EmailIcon,
     label: "Email",
-    value: "support@vpad.com",
-    href: "mailto:support@vpad.com",
+    value: "vpad.official@gmail.com",
+    href: "mailto:vpad.official@gmail.com",
   },
   {
     icon: LocationOnIcon,

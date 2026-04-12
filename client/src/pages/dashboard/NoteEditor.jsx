@@ -71,38 +71,98 @@ const renderInlineMarkdown = (text) => {
 const renderFormattedSummary = (summaryText) => {
   if (!summaryText) return null;
 
-  const normalizedText = summaryText.replace(/\s\*\s+/g, "\n* ");
-  const lines = normalizedText
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
+  const urduRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/;
+  const hasUrdu = urduRegex.test(summaryText);
+  const lines = summaryText.split(/\r?\n/);
+  const blocks = [];
+  let listItems = [];
+  let listType = null;
+  let keyCounter = 0;
+
+  const flushList = () => {
+    if (listItems.length === 0) return;
+
+    if (listType === "ol") {
+      blocks.push(
+        <ol key={`ol-${keyCounter++}`} className="list-decimal list-inside space-y-1">
+          {listItems.map((item, index) => (
+            <li key={`${index}-${item.slice(0, 16)}`}>{renderInlineMarkdown(item)}</li>
+          ))}
+        </ol>,
+      );
+    } else {
+      blocks.push(
+        <ul key={`ul-${keyCounter++}`} className="list-disc list-inside space-y-1">
+          {listItems.map((item, index) => (
+            <li key={`${index}-${item.slice(0, 16)}`}>{renderInlineMarkdown(item)}</li>
+          ))}
+        </ul>,
+      );
+    }
+
+    listItems = [];
+    listType = null;
+  };
+
+  lines.forEach((rawLine) => {
+    const line = rawLine.trim();
+
+    if (!line) {
+      flushList();
+      return;
+    }
+
+    const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
+    if (headingMatch) {
+      flushList();
+      const level = Math.min(3, headingMatch[1].length);
+      const headingText = headingMatch[2];
+      const HeadingTag = level === 1 ? "h2" : "h3";
+      blocks.push(
+        <HeadingTag
+          key={`h-${keyCounter++}`}
+          className="text-base font-semibold text-gray-900 dark:text-gray-100"
+        >
+          {renderInlineMarkdown(headingText)}
+        </HeadingTag>,
+      );
+      return;
+    }
+
+    const orderedMatch = line.match(/^\d+[\.)]\s+(.+)$/);
+    if (orderedMatch) {
+      if (listType && listType !== "ol") {
+        flushList();
+      }
+      listType = "ol";
+      listItems.push(orderedMatch[1]);
+      return;
+    }
+
+    const unorderedMatch = line.match(/^[-*+]\s+(.+)$/);
+    if (unorderedMatch) {
+      if (listType && listType !== "ul") {
+        flushList();
+      }
+      listType = "ul";
+      listItems.push(unorderedMatch[1]);
+      return;
+    }
+
+    flushList();
+    blocks.push(<p key={`p-${keyCounter++}`}>{renderInlineMarkdown(line)}</p>);
+  });
+
+  flushList();
 
   return (
-    <div className="space-y-3 text-gray-800 dark:text-gray-200 leading-7">
-      {lines.map((line, index) => {
-        if (/^#{1,6}\s+/.test(line)) {
-          const headingText = line.replace(/^#{1,6}\s+/, "");
-          return (
-            <h3
-              key={index}
-              className="text-base font-semibold text-gray-900 dark:text-gray-100"
-            >
-              {renderInlineMarkdown(headingText)}
-            </h3>
-          );
-        }
-
-        if (line.startsWith("* ")) {
-          return (
-            <div key={index} className="flex items-start gap-2">
-              <span className="mt-1 text-primary-600">•</span>
-              <p>{renderInlineMarkdown(line.slice(2))}</p>
-            </div>
-          );
-        }
-
-        return <p key={index}>{renderInlineMarkdown(line)}</p>;
-      })}
+    <div
+      dir={hasUrdu ? "rtl" : "ltr"}
+      className={`space-y-3 text-gray-800 dark:text-gray-200 leading-7 ${
+        hasUrdu ? "text-right" : "text-left"
+      }`}
+    >
+      {blocks}
     </div>
   );
 };
