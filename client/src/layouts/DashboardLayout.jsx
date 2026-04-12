@@ -41,7 +41,9 @@ export default function DashboardLayout() {
         return;
       }
 
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      const prefersDark = window.matchMedia(
+        "(prefers-color-scheme: dark)",
+      ).matches;
       setIsDarkMode(prefersDark);
     };
 
@@ -62,7 +64,9 @@ export default function DashboardLayout() {
   };
 
   return (
-    <div className={`min-h-screen flex ${isDarkMode ? "dark bg-gray-900" : "bg-gray-50"}`}>
+    <div
+      className={`min-h-screen flex ${isDarkMode ? "dark bg-gray-900" : "bg-gray-50"}`}
+    >
       <aside
         className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -128,7 +132,9 @@ export default function DashboardLayout() {
                 <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                   {user?.name}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                  {user?.email}
+                </p>
               </div>
             </div>
             <button

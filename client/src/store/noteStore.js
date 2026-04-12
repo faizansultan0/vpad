@@ -239,7 +239,13 @@ const useNoteStore = create((set, get) => ({
     return response.data.data;
   },
 
-  createComment: async ({ noteId, content, parentCommentId, audioBlob, recordingDuration }) => {
+  createComment: async ({
+    noteId,
+    content,
+    parentCommentId,
+    audioBlob,
+    recordingDuration,
+  }) => {
     const formData = new FormData();
     formData.append("noteId", noteId);
     if (typeof content === "string") {

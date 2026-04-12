@@ -26,7 +26,7 @@ export default function Profile() {
       language: "en",
       theme: "system",
       notifications: { email: true, push: true, comments: true, shares: true },
-    }
+    },
   );
 
   const handleProfileUpdate = async (e) => {
@@ -58,7 +58,7 @@ export default function Profile() {
     try {
       await updatePassword(
         passwordData.currentPassword,
-        passwordData.newPassword
+        passwordData.newPassword,
       );
       toast.success("Password updated");
       setPasswordData({
@@ -107,8 +107,12 @@ export default function Profile() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Account Settings</h1>
-        <p className="text-gray-600 dark:text-gray-400">Manage your profile and preferences</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          Account Settings
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          Manage your profile and preferences
+        </p>
       </div>
 
       <div className="card">

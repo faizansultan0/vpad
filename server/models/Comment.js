@@ -82,7 +82,7 @@ const commentSchema = new mongoose.Schema(
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
-  }
+  },
 );
 
 commentSchema.index({ note: 1, createdAt: -1 });

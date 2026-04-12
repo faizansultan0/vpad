@@ -96,7 +96,9 @@ export default function Dashboard() {
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">{stat.label}</p>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">
+                      {stat.label}
+                    </p>
                     <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">
                       {stat.value}
                     </p>
@@ -134,8 +136,12 @@ export default function Dashboard() {
                 <AddIcon className="text-white" />
               </div>
               <div>
-                <p className="font-medium text-gray-900 dark:text-gray-100">Add Institution</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Create new</p>
+                <p className="font-medium text-gray-900 dark:text-gray-100">
+                  Add Institution
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Create new
+                </p>
               </div>
             </Link>
             <Link
@@ -146,8 +152,12 @@ export default function Dashboard() {
                 <NoteIcon className="text-white" />
               </div>
               <div>
-                <p className="font-medium text-gray-900 dark:text-gray-100">New Note</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Start writing</p>
+                <p className="font-medium text-gray-900 dark:text-gray-100">
+                  New Note
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Start writing
+                </p>
               </div>
             </Link>
             <Link
@@ -158,8 +168,12 @@ export default function Dashboard() {
                 <FolderSharedIcon className="text-white" />
               </div>
               <div>
-                <p className="font-medium text-gray-900 dark:text-gray-100">Shared Notes</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Collaborate</p>
+                <p className="font-medium text-gray-900 dark:text-gray-100">
+                  Shared Notes
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Collaborate
+                </p>
               </div>
             </Link>
             <Link
@@ -170,8 +184,12 @@ export default function Dashboard() {
                 <NotificationsIcon className="text-white" />
               </div>
               <div>
-                <p className="font-medium text-gray-900 dark:text-gray-100">Notifications</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Stay updated</p>
+                <p className="font-medium text-gray-900 dark:text-gray-100">
+                  Notifications
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Stay updated
+                </p>
               </div>
             </Link>
           </div>
@@ -267,7 +285,9 @@ export default function Dashboard() {
                     <SchoolIcon className="text-white" />
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900 dark:text-gray-100">{inst.name}</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">
+                      {inst.name}
+                    </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
                       {inst.type}
                     </p>

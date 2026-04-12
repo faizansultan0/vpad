@@ -61,7 +61,11 @@ router.post("/logout", authController.logout);
 router.post("/logout-all", authController.logoutAll);
 router.patch("/profile", authController.updateProfile);
 router.patch("/email", authController.updateEmail);
-router.patch("/password", authValidation.updatePassword, authController.updatePassword);
+router.patch(
+  "/password",
+  authValidation.updatePassword,
+  authController.updatePassword,
+);
 router.patch(
   "/profile-picture",
   uploadProfilePicture.single("image"),

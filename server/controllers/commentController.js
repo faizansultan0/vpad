@@ -2,7 +2,10 @@ const { Comment, Note, User } = require("../models");
 const { asyncHandler, AppError } = require("../middlewares");
 const { notificationService } = require("../services");
 const { detectLanguage, isRtlText } = require("../utils");
-const { uploadToCloudinary, deleteFromCloudinary } = require("../config/cloudinary");
+const {
+  uploadToCloudinary,
+  deleteFromCloudinary,
+} = require("../config/cloudinary");
 
 const createComment = asyncHandler(async (req, res) => {
   const { noteId, content, parentCommentId, recordingDuration } = req.body;
@@ -13,7 +16,10 @@ const createComment = asyncHandler(async (req, res) => {
   }
 
   if (!note.canUserComment(req.user._id)) {
-    throw new AppError("You do not have permission to comment on this note", 403);
+    throw new AppError(
+      "You do not have permission to comment on this note",
+      403,
+    );
   }
 
   let parentComment = null;
@@ -26,7 +32,10 @@ const createComment = asyncHandler(async (req, res) => {
 
   let audio = null;
   if (req.file) {
-    const uploadedAudio = await uploadToCloudinary(req.file.buffer, "vpad/comments");
+    const uploadedAudio = await uploadToCloudinary(
+      req.file.buffer,
+      "vpad/comments",
+    );
     audio = {
       ...uploadedAudio,
       duration: Number(recordingDuration) || undefined,
@@ -233,13 +242,13 @@ const addReaction = asyncHandler(async (req, res) => {
   }
 
   const existingReaction = comment.reactions.find(
-    (r) => r.user.toString() === req.user._id.toString()
+    (r) => r.user.toString() === req.user._id.toString(),
   );
 
   if (existingReaction) {
     if (existingReaction.type === type) {
       comment.reactions = comment.reactions.filter(
-        (r) => r.user.toString() !== req.user._id.toString()
+        (r) => r.user.toString() !== req.user._id.toString(),
       );
     } else {
       existingReaction.type = type;

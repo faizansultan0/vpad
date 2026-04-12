@@ -71,7 +71,9 @@ export default function Terms() {
 
           {sections.map((section) => (
             <section key={section.title} className="space-y-2">
-              <h2 className="text-xl font-semibold text-gray-900">{section.title}</h2>
+              <h2 className="text-xl font-semibold text-gray-900">
+                {section.title}
+              </h2>
               <p className="text-gray-700 leading-relaxed">{section.content}</p>
             </section>
           ))}

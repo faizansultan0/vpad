@@ -207,10 +207,7 @@ const deleteUser = asyncHandler(async (req, res) => {
       { $pull: { "quiz.attempts": { user: userId } } },
     ),
     Note.updateMany({ lastEditedBy: userId }, { $unset: { lastEditedBy: "" } }),
-    Comment.updateMany(
-      { mentions: userId },
-      { $pull: { mentions: userId } },
-    ),
+    Comment.updateMany({ mentions: userId }, { $pull: { mentions: userId } }),
     Comment.updateMany(
       { "reactions.user": userId },
       { $pull: { reactions: { user: userId } } },
@@ -322,7 +319,10 @@ const inviteAdmin = asyncHandler(async (req, res) => {
     });
   } catch (error) {
     await User.deleteOne({ _id: pendingAdmin._id }).catch(() => {});
-    throw new AppError("Failed to send invitation email. Please try again.", 500);
+    throw new AppError(
+      "Failed to send invitation email. Please try again.",
+      500,
+    );
   }
 
   res.status(201).json({

@@ -67,7 +67,7 @@ export default function Semesters() {
 
   const filteredSemesters = semesters.filter(
     (s) =>
-      s.institution?._id === institutionId || s.institution === institutionId
+      s.institution?._id === institutionId || s.institution === institutionId,
   );
 
   const openModal = (semester = null) => {
@@ -182,7 +182,9 @@ export default function Semesters() {
                     </button>
                   </div>
                 </div>
-                <Link to={`/institutions/${institutionId}/content?semester=${sem._id}`}>
+                <Link
+                  to={`/institutions/${institutionId}/content?semester=${sem._id}`}
+                >
                   <h3 className="text-lg font-semibold text-gray-900 hover:text-primary-600 transition-colors">
                     {sem.name}
                   </h3>

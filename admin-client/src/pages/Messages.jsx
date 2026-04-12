@@ -10,7 +10,8 @@ const statusOptions = ["new", "in_progress", "replied", "closed"];
 export default function Messages() {
   const { user } = useAuthStore();
   const canManageContacts =
-    user?.role === "superadmin" || user?.permissions?.includes("manage_contacts");
+    user?.role === "superadmin" ||
+    user?.permissions?.includes("manage_contacts");
 
   const {
     contacts,
@@ -92,7 +93,9 @@ export default function Messages() {
               <div className="spinner" />
             </div>
           ) : contacts.length === 0 ? (
-            <div className="p-6 text-center text-gray-500">No contact messages yet.</div>
+            <div className="p-6 text-center text-gray-500">
+              No contact messages yet.
+            </div>
           ) : (
             <div className="max-h-[70vh] overflow-auto divide-y divide-gray-100">
               {contacts.map((contact) => (
@@ -104,12 +107,16 @@ export default function Messages() {
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <p className="font-medium text-gray-900 truncate">{contact.subject}</p>
+                    <p className="font-medium text-gray-900 truncate">
+                      {contact.subject}
+                    </p>
                     <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 capitalize">
                       {contact.status}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-600 truncate">{contact.name} • {contact.email}</p>
+                  <p className="text-sm text-gray-600 truncate">
+                    {contact.name} • {contact.email}
+                  </p>
                 </button>
               ))}
             </div>
@@ -120,7 +127,10 @@ export default function Messages() {
           {!selectedContact ? (
             <div className="h-full min-h-[280px] flex items-center justify-center text-gray-500">
               <div className="text-center">
-                <MailOutlineIcon className="text-gray-300" style={{ fontSize: 48 }} />
+                <MailOutlineIcon
+                  className="text-gray-300"
+                  style={{ fontSize: 48 }}
+                />
                 <p>Select a message to view details</p>
               </div>
             </div>
@@ -128,8 +138,12 @@ export default function Messages() {
             <div className="space-y-5">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                  <h2 className="text-xl font-semibold text-gray-900">{selectedContact.subject}</h2>
-                  <p className="text-sm text-gray-600">From {selectedContact.name} ({selectedContact.email})</p>
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    {selectedContact.subject}
+                  </h2>
+                  <p className="text-sm text-gray-600">
+                    From {selectedContact.name} ({selectedContact.email})
+                  </p>
                 </div>
                 <select
                   value={selectedContact.status}
@@ -145,7 +159,9 @@ export default function Messages() {
               </div>
 
               <div className="bg-gray-50 rounded-xl p-4">
-                <p className="text-gray-800 whitespace-pre-wrap">{selectedContact.message}</p>
+                <p className="text-gray-800 whitespace-pre-wrap">
+                  {selectedContact.message}
+                </p>
               </div>
 
               {selectedContact.replies?.length > 0 && (
@@ -153,17 +169,25 @@ export default function Messages() {
                   <h3 className="font-semibold text-gray-900">Replies</h3>
                   {selectedContact.replies.map((reply) => (
                     <div key={reply._id} className="bg-blue-50 rounded-xl p-3">
-                      <p className="text-sm text-blue-900 whitespace-pre-wrap">{reply.message}</p>
+                      <p className="text-sm text-blue-900 whitespace-pre-wrap">
+                        {reply.message}
+                      </p>
                       <p className="text-xs text-blue-700 mt-2">
-                        {reply.admin?.name || "Admin"} • {new Date(reply.createdAt).toLocaleString()}
+                        {reply.admin?.name || "Admin"} •{" "}
+                        {new Date(reply.createdAt).toLocaleString()}
                       </p>
                     </div>
                   ))}
                 </div>
               )}
 
-              <form onSubmit={handleReply} className="space-y-3 pt-2 border-t border-gray-100">
-                <label className="block text-sm font-medium text-gray-700">Reply</label>
+              <form
+                onSubmit={handleReply}
+                className="space-y-3 pt-2 border-t border-gray-100"
+              >
+                <label className="block text-sm font-medium text-gray-700">
+                  Reply
+                </label>
                 <textarea
                   className="input-field resize-none"
                   rows={4}
@@ -172,7 +196,10 @@ export default function Messages() {
                   placeholder="Write your reply..."
                   required
                 />
-                <button type="submit" className="btn-primary inline-flex items-center">
+                <button
+                  type="submit"
+                  className="btn-primary inline-flex items-center"
+                >
                   <ReplyIcon className="mr-2" fontSize="small" /> Send Reply
                 </button>
               </form>

@@ -158,7 +158,9 @@ const useAdminStore = create((set) => ({
   },
 
   updateContactStatus: async (id, status) => {
-    const response = await api.patch(`/admin/contacts/${id}/status`, { status });
+    const response = await api.patch(`/admin/contacts/${id}/status`, {
+      status,
+    });
     set((state) => ({
       contacts: state.contacts.map((c) =>
         c._id === id ? response.data.data.contact : c,
@@ -172,7 +174,9 @@ const useAdminStore = create((set) => ({
   },
 
   assignContact: async (id, adminId) => {
-    const response = await api.patch(`/admin/contacts/${id}/assign`, { adminId });
+    const response = await api.patch(`/admin/contacts/${id}/assign`, {
+      adminId,
+    });
     set((state) => ({
       contacts: state.contacts.map((c) =>
         c._id === id ? response.data.data.contact : c,

@@ -102,7 +102,9 @@ export default function Institutions() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Institutions</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            Institutions
+          </h1>
           <p className="text-gray-600 dark:text-gray-400">
             Manage your schools, colleges, and universities
           </p>
@@ -144,7 +146,10 @@ export default function Institutions() {
                       className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
                       title="Edit"
                     >
-                      <EditIcon fontSize="small" className="text-gray-500 dark:text-gray-400" />
+                      <EditIcon
+                        fontSize="small"
+                        className="text-gray-500 dark:text-gray-400"
+                      />
                     </button>
                     <button
                       onClick={() => setDeleteConfirm(inst)}

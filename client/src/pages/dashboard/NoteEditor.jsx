@@ -83,7 +83,10 @@ const renderFormattedSummary = (summaryText) => {
         if (/^#{1,6}\s+/.test(line)) {
           const headingText = line.replace(/^#{1,6}\s+/, "");
           return (
-            <h3 key={index} className="text-base font-semibold text-gray-900 dark:text-gray-100">
+            <h3
+              key={index}
+              className="text-base font-semibold text-gray-900 dark:text-gray-100"
+            >
               {renderInlineMarkdown(headingText)}
             </h3>
           );
@@ -155,11 +158,13 @@ export default function NoteEditor() {
   const recordingStreamRef = useRef(null);
   const recordingIntervalRef = useRef(null);
 
-  const isOwner = String(currentNote?.user?._id || currentNote?.user) === String(user?._id);
+  const isOwner =
+    String(currentNote?.user?._id || currentNote?.user) === String(user?._id);
   const collaboratorEntry = currentNote?.collaborators?.find(
     (collab) => String(collab?.user?._id || collab?.user) === String(user?._id),
   );
-  const canComment = isOwner || ["edit", "admin"].includes(collaboratorEntry?.permission);
+  const canComment =
+    isOwner || ["edit", "admin"].includes(collaboratorEntry?.permission);
 
   const editor = useEditor({
     extensions: [
@@ -262,7 +267,10 @@ export default function NoteEditor() {
   const handleStartRecording = useCallback(async () => {
     if (isRecording) return;
 
-    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+    if (
+      !navigator.mediaDevices?.getUserMedia ||
+      typeof MediaRecorder === "undefined"
+    ) {
       toast.error("Voice recording is not supported in this browser.");
       return;
     }
@@ -288,7 +296,9 @@ export default function NoteEditor() {
       };
 
       recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
+        const blob = new Blob(chunks, {
+          type: recorder.mimeType || "audio/webm",
+        });
         setAudioBlob(blob);
         setAudioPreviewUrl(URL.createObjectURL(blob));
         stopActiveRecording();
@@ -733,7 +743,9 @@ export default function NoteEditor() {
 
       <div className="mt-4 border border-gray-100 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-900 p-4 overflow-auto max-h-[40vh]">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Comments</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            Comments
+          </h3>
           {!canComment && (
             <span className="text-xs text-gray-500 dark:text-gray-400">
               View-only collaborators cannot add comments
@@ -747,7 +759,11 @@ export default function NoteEditor() {
             onChange={(e) => setCommentInput(e.target.value)}
             className="input-field resize-none"
             rows={3}
-            placeholder={canComment ? "Add a text comment..." : "You can view comments only"}
+            placeholder={
+              canComment
+                ? "Add a text comment..."
+                : "You can view comments only"
+            }
             disabled={!canComment || isCommentSubmitting}
           />
 
@@ -767,7 +783,8 @@ export default function NoteEditor() {
                 onClick={handleStopRecording}
                 className="bg-red-600 text-white px-4 py-2 rounded-xl text-sm inline-flex items-center hover:bg-red-700 transition-colors"
               >
-                <StopIcon fontSize="small" className="mr-1" /> Stop ({recordingDuration}s)
+                <StopIcon fontSize="small" className="mr-1" /> Stop (
+                {recordingDuration}s)
               </button>
             )}
 
@@ -797,10 +814,15 @@ export default function NoteEditor() {
 
         <div className="space-y-3">
           {comments.length === 0 ? (
-            <p className="text-sm text-gray-500 dark:text-gray-400">No comments yet.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              No comments yet.
+            </p>
           ) : (
             comments.map((comment) => (
-              <div key={comment._id} className="rounded-xl border border-gray-100 dark:border-gray-700 p-3 bg-gray-50 dark:bg-gray-800/50">
+              <div
+                key={comment._id}
+                className="rounded-xl border border-gray-100 dark:border-gray-700 p-3 bg-gray-50 dark:bg-gray-800/50"
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-2">
                     <Avatar
@@ -810,14 +832,25 @@ export default function NoteEditor() {
                       {comment.user?.name?.charAt(0)}
                     </Avatar>
                     <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{comment.user?.name || "User"}</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {comment.user?.name || "User"}
+                      </p>
                       {comment.content && (
-                        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{comment.content}</p>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                          {comment.content}
+                        </p>
                       )}
                       {comment.audio?.url && (
                         <div className="mt-2 flex items-center gap-2">
-                          <VolumeUpIcon fontSize="small" className="text-primary-600" />
-                          <audio controls src={comment.audio.url} className="h-10" />
+                          <VolumeUpIcon
+                            fontSize="small"
+                            className="text-primary-600"
+                          />
+                          <audio
+                            controls
+                            src={comment.audio.url}
+                            className="h-10"
+                          />
                         </div>
                       )}
                     </div>
@@ -834,19 +867,31 @@ export default function NoteEditor() {
                   )}
                 </div>
 
-                {Array.isArray(comment.replies) && comment.replies.length > 0 && (
-                  <div className="mt-3 ml-8 space-y-2">
-                    {comment.replies.map((reply) => (
-                      <div key={reply._id} className="rounded-lg bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700 p-2">
-                        <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">{reply.user?.name || "User"}</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{reply.content}</p>
-                        {reply.audio?.url && (
-                          <audio controls src={reply.audio.url} className="h-8 mt-1" />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
+                {Array.isArray(comment.replies) &&
+                  comment.replies.length > 0 && (
+                    <div className="mt-3 ml-8 space-y-2">
+                      {comment.replies.map((reply) => (
+                        <div
+                          key={reply._id}
+                          className="rounded-lg bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700 p-2"
+                        >
+                          <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                            {reply.user?.name || "User"}
+                          </p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
+                            {reply.content}
+                          </p>
+                          {reply.audio?.url && (
+                            <audio
+                              controls
+                              src={reply.audio.url}
+                              className="h-8 mt-1"
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
               </div>
             ))
           )}
@@ -907,7 +952,7 @@ export default function NoteEditor() {
             <h2 className="text-xl font-semibold">Share Note</h2>
             <button
               onClick={() => setShareModal(false)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
             >
               <CloseIcon />
             </button>
@@ -1060,7 +1105,10 @@ export default function NoteEditor() {
             </div>
           )}
           {quiz?.questions?.map((q, i) => (
-            <div key={i} className="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
+            <div
+              key={i}
+              className="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl"
+            >
               <p className="font-medium text-gray-900 dark:text-gray-100 mb-3">
                 {i + 1}. {q.question}
               </p>
@@ -1087,7 +1135,9 @@ export default function NoteEditor() {
                 ))}
               </div>
               {quizSubmitted && q.explanation && (
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">💡 {q.explanation}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                  💡 {q.explanation}
+                </p>
               )}
             </div>
           ))}

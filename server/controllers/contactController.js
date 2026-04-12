@@ -62,7 +62,11 @@ const getContacts = asyncHandler(async (req, res) => {
     success: true,
     data: {
       contacts,
-      pagination: getPaginationInfo(total, parseInt(page, 10), parseInt(limit, 10)),
+      pagination: getPaginationInfo(
+        total,
+        parseInt(page, 10),
+        parseInt(limit, 10),
+      ),
     },
   });
 });

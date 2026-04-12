@@ -79,8 +79,12 @@ export default function Notifications() {
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Notifications</h1>
-          <p className="text-gray-600 dark:text-gray-400">Stay updated with your activity</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            Notifications
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            Stay updated with your activity
+          </p>
         </div>
         {notifications.some((n) => !n.isRead) && (
           <button
@@ -170,7 +174,7 @@ export default function Notifications() {
                           <span className="text-xs text-gray-400 dark:text-gray-500">
                             {formatDistanceToNow(
                               new Date(notification.createdAt),
-                              { addSuffix: true }
+                              { addSuffix: true },
                             )}
                           </span>
                         </div>

@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams, Link, useSearchParams } from "react-router-dom";
+import {
+  useNavigate,
+  useParams,
+  Link,
+  useSearchParams,
+} from "react-router-dom";
 import { motion } from "framer-motion";
 import { useNoteStore } from "../../store";
 import toast from "react-hot-toast";
@@ -91,7 +96,8 @@ export default function InstitutionContent() {
 
     return notes.filter((note) => {
       const semesterMatch =
-        String(note.semester?._id || note.semester) === String(selectedSemesterId);
+        String(note.semester?._id || note.semester) ===
+        String(selectedSemesterId);
       const subjectMatch =
         String(note.subject?._id || note.subject) === String(selectedSubjectId);
       const text = `${note.title} ${note.subject?.name || ""}`.toLowerCase();
@@ -110,9 +116,10 @@ export default function InstitutionContent() {
 
         const loadedSemesters = await fetchSemesters(institutionId);
         const semesterFromQuery = searchParams.get("semester");
-        const firstSemester = loadedSemesters?.find(
-          (semester) => String(semester._id) === String(semesterFromQuery),
-        ) || loadedSemesters?.[0];
+        const firstSemester =
+          loadedSemesters?.find(
+            (semester) => String(semester._id) === String(semesterFromQuery),
+          ) || loadedSemesters?.[0];
 
         if (!firstSemester) {
           setSelectedSemesterId("");
@@ -126,9 +133,10 @@ export default function InstitutionContent() {
 
         const loadedSubjects = await fetchSubjects(semesterId);
         const subjectFromQuery = searchParams.get("subject");
-        const firstSubject = loadedSubjects?.find(
-          (subject) => String(subject._id) === String(subjectFromQuery),
-        ) || loadedSubjects?.[0];
+        const firstSubject =
+          loadedSubjects?.find(
+            (subject) => String(subject._id) === String(subjectFromQuery),
+          ) || loadedSubjects?.[0];
 
         if (firstSubject) {
           setSelectedSubjectId(firstSubject._id);
@@ -397,7 +405,10 @@ export default function InstitutionContent() {
         </div>
       ) : (
         <div className="card text-center py-14">
-          <NoteIcon className="text-gray-300 dark:text-gray-600 mb-4" style={{ fontSize: 56 }} />
+          <NoteIcon
+            className="text-gray-300 dark:text-gray-600 mb-4"
+            style={{ fontSize: 56 }}
+          />
           <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
             No notes found
           </h3>
@@ -409,7 +420,12 @@ export default function InstitutionContent() {
         </div>
       )}
 
-      <Dialog open={modalOpen} onClose={() => setModalOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">Create New Note</h2>
@@ -445,7 +461,12 @@ export default function InstitutionContent() {
         </div>
       </Dialog>
 
-      <Dialog open={semesterModalOpen} onClose={() => setSemesterModalOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={semesterModalOpen}
+        onClose={() => setSemesterModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">Add Semester</h2>
@@ -500,7 +521,10 @@ export default function InstitutionContent() {
               <textarea
                 value={semesterForm.description}
                 onChange={(e) =>
-                  setSemesterForm((prev) => ({ ...prev, description: e.target.value }))
+                  setSemesterForm((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
                 }
                 className="input-field resize-none"
                 rows={3}
@@ -523,7 +547,12 @@ export default function InstitutionContent() {
         </div>
       </Dialog>
 
-      <Dialog open={subjectModalOpen} onClose={() => setSubjectModalOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={subjectModalOpen}
+        onClose={() => setSubjectModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">Add Subject</h2>
@@ -561,7 +590,10 @@ export default function InstitutionContent() {
                   type="text"
                   value={subjectForm.code}
                   onChange={(e) =>
-                    setSubjectForm((prev) => ({ ...prev, code: e.target.value }))
+                    setSubjectForm((prev) => ({
+                      ...prev,
+                      code: e.target.value,
+                    }))
                   }
                   className="input-field"
                   placeholder="e.g., CS301"
@@ -575,7 +607,10 @@ export default function InstitutionContent() {
                   type="text"
                   value={subjectForm.instructor}
                   onChange={(e) =>
-                    setSubjectForm((prev) => ({ ...prev, instructor: e.target.value }))
+                    setSubjectForm((prev) => ({
+                      ...prev,
+                      instructor: e.target.value,
+                    }))
                   }
                   className="input-field"
                   placeholder="e.g., Dr. Ahmed"
@@ -590,7 +625,10 @@ export default function InstitutionContent() {
               <textarea
                 value={subjectForm.description}
                 onChange={(e) =>
-                  setSubjectForm((prev) => ({ ...prev, description: e.target.value }))
+                  setSubjectForm((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
                 }
                 className="input-field resize-none"
                 rows={3}

@@ -90,12 +90,11 @@ const authValidation = {
       .normalizeEmail({ gmail_remove_subaddress: false }),
     validate,
   ],
-  resetPassword: [
-    passwordPolicy,
-    validate,
-  ],
+  resetPassword: [passwordPolicy, validate],
   updatePassword: [
-    body("currentPassword").notEmpty().withMessage("Current password is required"),
+    body("currentPassword")
+      .notEmpty()
+      .withMessage("Current password is required"),
     body("newPassword")
       .notEmpty()
       .withMessage("New password is required")

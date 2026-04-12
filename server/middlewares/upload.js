@@ -17,9 +17,9 @@ const fileFilter = (req, file, cb) => {
   } else {
     cb(
       new Error(
-        "Invalid file type. Only images (JPEG, PNG, GIF, WebP) and PDF files are allowed."
+        "Invalid file type. Only images (JPEG, PNG, GIF, WebP) and PDF files are allowed.",
       ),
-      false
+      false,
     );
   }
 };
@@ -32,9 +32,9 @@ const imageFilter = (req, file, cb) => {
   } else {
     cb(
       new Error(
-        "Invalid file type. Only images (JPEG, PNG, GIF, WebP) are allowed."
+        "Invalid file type. Only images (JPEG, PNG, GIF, WebP) are allowed.",
       ),
-      false
+      false,
     );
   }
 };
