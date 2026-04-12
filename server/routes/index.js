@@ -9,6 +9,7 @@ const noteRoutes = require("./noteRoutes");
 const commentRoutes = require("./commentRoutes");
 const notificationRoutes = require("./notificationRoutes");
 const adminRoutes = require("./adminRoutes");
+const contactRoutes = require("./contactRoutes");
 
 router.use("/auth", authRoutes);
 router.use("/institutions", institutionRoutes);
@@ -18,6 +19,7 @@ router.use("/notes", noteRoutes);
 router.use("/comments", commentRoutes);
 router.use("/notifications", notificationRoutes);
 router.use("/admin", adminRoutes);
+router.use("/contacts", contactRoutes);
 
 router.get("/health", (req, res) => {
   res.json({

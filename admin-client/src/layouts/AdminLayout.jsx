@@ -5,6 +5,7 @@ import DashboardIcon from "@mui/icons-material/Dashboard";
 import PeopleIcon from "@mui/icons-material/People";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import CampaignIcon from "@mui/icons-material/Campaign";
+import MailOutlineIcon from "@mui/icons-material/MailOutline";
 import LogoutIcon from "@mui/icons-material/Logout";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
@@ -15,6 +16,7 @@ const navLinks = [
   { path: "/users", label: "Users", icon: PeopleIcon },
   { path: "/admins", label: "Admins", icon: AdminPanelSettingsIcon },
   { path: "/announcements", label: "Announcements", icon: CampaignIcon },
+  { path: "/messages", label: "Messages", icon: MailOutlineIcon },
 ];
 
 export default function AdminLayout() {

@@ -5,6 +5,7 @@ const app = require("./app");
 const connectDB = require("./config/db");
 const { initializeSocket } = require("./sockets");
 const { aiService } = require("./services");
+const { verifyEmailTransport } = require("./config/email");
 const PORT = process.env.PORT || 5000;
 
 const server = http.createServer(app);
@@ -32,6 +33,7 @@ aiService.initializeAI();
 const startServer = async () => {
   try {
     await connectDB();
+    await verifyEmailTransport();
 
     server.listen(PORT, () => {
       console.log(`

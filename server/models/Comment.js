@@ -14,8 +14,22 @@ const commentSchema = new mongoose.Schema(
     },
     content: {
       type: String,
-      required: [true, "Comment content is required"],
+      default: "",
       maxlength: [5000, "Comment cannot exceed 5000 characters"],
+    },
+    audio: {
+      url: {
+        type: String,
+      },
+      publicId: {
+        type: String,
+      },
+      duration: {
+        type: Number,
+      },
+      mimeType: {
+        type: String,
+      },
     },
     language: {
       type: String,

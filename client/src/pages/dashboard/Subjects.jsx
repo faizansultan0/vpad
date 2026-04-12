@@ -124,7 +124,7 @@ export default function Subjects() {
             semester?.institution
               ? `/institutions/${
                   semester.institution._id || semester.institution
-                }/semesters`
+                }/content?semester=${semesterId}`
               : "/institutions"
           }
           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -183,7 +183,11 @@ export default function Subjects() {
                     </button>
                   </div>
                 </div>
-                <Link to={`/subjects/${sub._id}/notes`}>
+                <Link
+                  to={`/institutions/${
+                    semester?.institution?._id || semester?.institution
+                  }/content?semester=${semesterId}&subject=${sub._id}`}
+                >
                   <h3 className="text-lg font-semibold text-gray-900 hover:text-primary-600 transition-colors">
                     {sub.name}
                   </h3>
@@ -204,7 +208,7 @@ export default function Subjects() {
                   )}
                   <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between text-sm text-gray-500">
                     <span>{sub.noteCount || 0} Notes</span>
-                    <span className="text-primary-600">View →</span>
+                    <span className="text-primary-600">Open →</span>
                   </div>
                 </Link>
               </motion.div>

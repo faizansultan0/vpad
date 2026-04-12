@@ -37,6 +37,11 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Dialog from "@mui/material/Dialog";
 import CloseIcon from "@mui/icons-material/Close";
+import MicIcon from "@mui/icons-material/Mic";
+import StopIcon from "@mui/icons-material/Stop";
+import SendIcon from "@mui/icons-material/Send";
+import DeleteIcon from "@mui/icons-material/Delete";
+import VolumeUpIcon from "@mui/icons-material/VolumeUp";
 
 const MenuButton = ({ onClick, active, disabled, children, title }) => (
   <button
@@ -45,8 +50,8 @@ const MenuButton = ({ onClick, active, disabled, children, title }) => (
     title={title}
     className={`p-2 rounded-lg transition-colors ${
       active
-        ? "bg-primary-100 text-primary-600"
-        : "hover:bg-gray-100 text-gray-600"
+        ? "bg-primary-100 dark:bg-primary-600/20 text-primary-600 dark:text-primary-300"
+        : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300"
     } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
   >
     {children}
@@ -73,12 +78,12 @@ const renderFormattedSummary = (summaryText) => {
     .filter(Boolean);
 
   return (
-    <div className="space-y-3 text-gray-800 leading-7">
+    <div className="space-y-3 text-gray-800 dark:text-gray-200 leading-7">
       {lines.map((line, index) => {
         if (/^#{1,6}\s+/.test(line)) {
           const headingText = line.replace(/^#{1,6}\s+/, "");
           return (
-            <h3 key={index} className="text-base font-semibold text-gray-900">
+            <h3 key={index} className="text-base font-semibold text-gray-900 dark:text-gray-100">
               {renderInlineMarkdown(headingText)}
             </h3>
           );
@@ -112,6 +117,11 @@ export default function NoteEditor() {
     generateQuiz,
     uploadAttachment,
     submitQuizAttempt,
+    comments,
+    fetchComments,
+    createComment,
+    deleteComment,
+    clearComments,
   } = useNoteStore();
   const { connect, joinNote, leaveNote, activeUsers, on, off, emitNoteChange } =
     useSocketStore();
@@ -134,7 +144,22 @@ export default function NoteEditor() {
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [quizResult, setQuizResult] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [commentInput, setCommentInput] = useState("");
+  const [audioBlob, setAudioBlob] = useState(null);
+  const [audioPreviewUrl, setAudioPreviewUrl] = useState("");
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isCommentSubmitting, setIsCommentSubmitting] = useState(false);
   const fetchedRef = useRef(false);
+  const recorderRef = useRef(null);
+  const recordingStreamRef = useRef(null);
+  const recordingIntervalRef = useRef(null);
+
+  const isOwner = String(currentNote?.user?._id || currentNote?.user) === String(user?._id);
+  const collaboratorEntry = currentNote?.collaborators?.find(
+    (collab) => String(collab?.user?._id || collab?.user) === String(user?._id),
+  );
+  const canComment = isOwner || ["edit", "admin"].includes(collaboratorEntry?.permission);
 
   const editor = useEditor({
     extensions: [
@@ -160,6 +185,7 @@ export default function NoteEditor() {
     const load = async () => {
       try {
         const note = await fetchNote(noteId);
+        await fetchComments(noteId);
         setTitle(note.title);
         editor?.commands.setContent(note.content || "");
         setIsLoading(false);
@@ -177,6 +203,13 @@ export default function NoteEditor() {
 
     return () => {
       leaveNote(noteId);
+      clearComments();
+      if (audioPreviewUrl) {
+        URL.revokeObjectURL(audioPreviewUrl);
+      }
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+      }
     };
   }, [noteId]);
 
@@ -192,6 +225,139 @@ export default function NoteEditor() {
     on("noteChange", handleNoteChange);
     return () => off("noteChange", handleNoteChange);
   }, [editor, user]);
+
+  useEffect(() => {
+    const refreshComments = (payload) => {
+      if (payload?.noteId && String(payload.noteId) !== String(noteId)) return;
+      fetchComments(noteId).catch(() => {});
+    };
+
+    on("newComment", refreshComments);
+    on("commentUpdated", refreshComments);
+    on("commentDeleted", refreshComments);
+    on("commentReaction", refreshComments);
+
+    return () => {
+      off("newComment", refreshComments);
+      off("commentUpdated", refreshComments);
+      off("commentDeleted", refreshComments);
+      off("commentReaction", refreshComments);
+    };
+  }, [noteId]);
+
+  const stopActiveRecording = useCallback(() => {
+    if (recordingIntervalRef.current) {
+      clearInterval(recordingIntervalRef.current);
+      recordingIntervalRef.current = null;
+    }
+
+    if (recordingStreamRef.current) {
+      recordingStreamRef.current.getTracks().forEach((track) => track.stop());
+      recordingStreamRef.current = null;
+    }
+
+    setIsRecording(false);
+  }, []);
+
+  const handleStartRecording = useCallback(async () => {
+    if (isRecording) return;
+
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+      toast.error("Voice recording is not supported in this browser.");
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const chunks = [];
+
+      recordingStreamRef.current = stream;
+      recorderRef.current = recorder;
+      setRecordingDuration(0);
+      setAudioBlob(null);
+      if (audioPreviewUrl) {
+        URL.revokeObjectURL(audioPreviewUrl);
+      }
+      setAudioPreviewUrl("");
+
+      recorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          chunks.push(event.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
+        setAudioBlob(blob);
+        setAudioPreviewUrl(URL.createObjectURL(blob));
+        stopActiveRecording();
+      };
+
+      recorder.start();
+      setIsRecording(true);
+      recordingIntervalRef.current = setInterval(() => {
+        setRecordingDuration((prev) => prev + 1);
+      }, 1000);
+    } catch (error) {
+      toast.error("Unable to access microphone.");
+    }
+  }, [audioPreviewUrl, isRecording, stopActiveRecording]);
+
+  const handleStopRecording = useCallback(() => {
+    if (!recorderRef.current || recorderRef.current.state === "inactive") {
+      stopActiveRecording();
+      return;
+    }
+    recorderRef.current.stop();
+  }, [stopActiveRecording]);
+
+  const clearRecordedAudio = () => {
+    setAudioBlob(null);
+    setRecordingDuration(0);
+    if (audioPreviewUrl) {
+      URL.revokeObjectURL(audioPreviewUrl);
+    }
+    setAudioPreviewUrl("");
+  };
+
+  const handleCommentSubmit = async (e) => {
+    e.preventDefault();
+    if (!canComment) return;
+
+    const trimmedComment = commentInput.trim();
+    if (!trimmedComment && !audioBlob) {
+      toast.error("Add text or record a voice comment.");
+      return;
+    }
+
+    setIsCommentSubmitting(true);
+    try {
+      await createComment({
+        noteId,
+        content: trimmedComment,
+        audioBlob,
+        recordingDuration,
+      });
+      setCommentInput("");
+      clearRecordedAudio();
+      await fetchComments(noteId);
+      toast.success("Comment posted");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to post comment");
+    } finally {
+      setIsCommentSubmitting(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    try {
+      await deleteComment(commentId);
+      toast.success("Comment deleted");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to delete comment");
+    }
+  };
 
   const handleSave = useCallback(async () => {
     if (!hasChanges) return;
@@ -378,14 +544,14 @@ export default function NoteEditor() {
 
   return (
     <div className="h-[calc(100vh-120px)] flex flex-col">
-      <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+      <div className="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center space-x-4">
           <button
             onClick={() => {
               if (hasChanges) handleSave();
               navigate(-1);
             }}
-            className="p-2 hover:bg-gray-100 rounded-lg"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
           >
             <ArrowBackIcon />
           </button>
@@ -396,7 +562,7 @@ export default function NoteEditor() {
               setTitle(e.target.value);
               setHasChanges(true);
             }}
-            className="text-xl font-semibold bg-transparent border-none outline-none focus:ring-0 w-full max-w-md"
+            className="text-xl font-semibold text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none focus:ring-0 w-full max-w-md"
             placeholder="Note title"
           />
         </div>
@@ -425,21 +591,21 @@ export default function NoteEditor() {
           </button>
           <button
             onClick={() => setShareModal(true)}
-            className="p-2 hover:bg-gray-100 rounded-lg"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
             title="Share"
           >
             <ShareIcon />
           </button>
           <button
             onClick={(e) => setAnchorEl(e.currentTarget)}
-            className="p-2 hover:bg-gray-100 rounded-lg"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
           >
             <MoreVertIcon />
           </button>
         </div>
       </div>
 
-      <div className="flex items-center space-x-1 py-2 border-b border-gray-100 overflow-x-auto">
+      <div className="flex items-center space-x-1 py-2 border-b border-gray-100 dark:border-gray-700 overflow-x-auto">
         <MenuButton
           onClick={() => editor?.chain().focus().toggleBold().run()}
           active={editor?.isActive("bold")}
@@ -461,7 +627,7 @@ export default function NoteEditor() {
         >
           <FormatUnderlinedIcon fontSize="small" />
         </MenuButton>
-        <div className="w-px h-6 bg-gray-200 mx-1" />
+        <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1" />
         <MenuButton
           onClick={() =>
             editor?.chain().focus().toggleHeading({ level: 1 }).run()
@@ -489,7 +655,7 @@ export default function NoteEditor() {
         >
           <span className="font-bold text-sm">H3</span>
         </MenuButton>
-        <div className="w-px h-6 bg-gray-200 mx-1" />
+        <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1" />
         <MenuButton
           onClick={() => editor?.chain().focus().toggleBulletList().run()}
           active={editor?.isActive("bulletList")}
@@ -518,7 +684,7 @@ export default function NoteEditor() {
         >
           <CodeIcon fontSize="small" />
         </MenuButton>
-        <div className="w-px h-6 bg-gray-200 mx-1" />
+        <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1" />
         <MenuButton
           onClick={() => editor?.chain().focus().setTextAlign("left").run()}
           active={editor?.isActive({ textAlign: "left" })}
@@ -540,7 +706,7 @@ export default function NoteEditor() {
         >
           <FormatAlignRightIcon fontSize="small" />
         </MenuButton>
-        <div className="w-px h-6 bg-gray-200 mx-1" />
+        <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1" />
         <MenuButton onClick={handleImageUpload} title="Insert Image">
           <ImageIcon fontSize="small" />
         </MenuButton>
@@ -561,8 +727,130 @@ export default function NoteEditor() {
         </MenuButton>
       </div>
 
-      <div className="flex-1 overflow-auto bg-white rounded-xl mt-4 border border-gray-100">
+      <div className="flex-1 overflow-auto bg-white dark:bg-gray-900 rounded-xl mt-4 border border-gray-100 dark:border-gray-700">
         <EditorContent editor={editor} className="prose max-w-none h-full" />
+      </div>
+
+      <div className="mt-4 border border-gray-100 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-900 p-4 overflow-auto max-h-[40vh]">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Comments</h3>
+          {!canComment && (
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              View-only collaborators cannot add comments
+            </span>
+          )}
+        </div>
+
+        <form onSubmit={handleCommentSubmit} className="space-y-3 mb-4">
+          <textarea
+            value={commentInput}
+            onChange={(e) => setCommentInput(e.target.value)}
+            className="input-field resize-none"
+            rows={3}
+            placeholder={canComment ? "Add a text comment..." : "You can view comments only"}
+            disabled={!canComment || isCommentSubmitting}
+          />
+
+          <div className="flex flex-wrap gap-2 items-center">
+            {!isRecording ? (
+              <button
+                type="button"
+                onClick={handleStartRecording}
+                disabled={!canComment || isCommentSubmitting}
+                className="btn-secondary inline-flex items-center text-sm py-2"
+              >
+                <MicIcon fontSize="small" className="mr-1" /> Record Voice
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleStopRecording}
+                className="bg-red-600 text-white px-4 py-2 rounded-xl text-sm inline-flex items-center hover:bg-red-700 transition-colors"
+              >
+                <StopIcon fontSize="small" className="mr-1" /> Stop ({recordingDuration}s)
+              </button>
+            )}
+
+            {audioPreviewUrl && (
+              <>
+                <audio controls src={audioPreviewUrl} className="h-10" />
+                <button
+                  type="button"
+                  onClick={clearRecordedAudio}
+                  className="text-sm px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Remove Audio
+                </button>
+              </>
+            )}
+
+            <button
+              type="submit"
+              disabled={!canComment || isCommentSubmitting}
+              className="btn-primary inline-flex items-center text-sm py-2"
+            >
+              <SendIcon fontSize="small" className="mr-1" />
+              {isCommentSubmitting ? "Posting..." : "Post Comment"}
+            </button>
+          </div>
+        </form>
+
+        <div className="space-y-3">
+          {comments.length === 0 ? (
+            <p className="text-sm text-gray-500 dark:text-gray-400">No comments yet.</p>
+          ) : (
+            comments.map((comment) => (
+              <div key={comment._id} className="rounded-xl border border-gray-100 dark:border-gray-700 p-3 bg-gray-50 dark:bg-gray-800/50">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-2">
+                    <Avatar
+                      src={comment.user?.profilePicture?.url}
+                      sx={{ width: 28, height: 28 }}
+                    >
+                      {comment.user?.name?.charAt(0)}
+                    </Avatar>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{comment.user?.name || "User"}</p>
+                      {comment.content && (
+                        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{comment.content}</p>
+                      )}
+                      {comment.audio?.url && (
+                        <div className="mt-2 flex items-center gap-2">
+                          <VolumeUpIcon fontSize="small" className="text-primary-600" />
+                          <audio controls src={comment.audio.url} className="h-10" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {String(comment.user?._id) === String(user?._id) && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteComment(comment._id)}
+                      className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+                      title="Delete comment"
+                    >
+                      <DeleteIcon fontSize="small" className="text-red-500" />
+                    </button>
+                  )}
+                </div>
+
+                {Array.isArray(comment.replies) && comment.replies.length > 0 && (
+                  <div className="mt-3 ml-8 space-y-2">
+                    {comment.replies.map((reply) => (
+                      <div key={reply._id} className="rounded-lg bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700 p-2">
+                        <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">{reply.user?.name || "User"}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{reply.content}</p>
+                        {reply.audio?.url && (
+                          <audio controls src={reply.audio.url} className="h-8 mt-1" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
       <Menu
@@ -619,14 +907,14 @@ export default function NoteEditor() {
             <h2 className="text-xl font-semibold">Share Note</h2>
             <button
               onClick={() => setShareModal(false)}
-              className="p-2 hover:bg-gray-100 rounded-lg"
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
             >
               <CloseIcon />
             </button>
           </div>
           <form onSubmit={handleShare} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Email Address
               </label>
               <input
@@ -639,7 +927,7 @@ export default function NoteEditor() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Permission
               </label>
               <select
@@ -653,14 +941,14 @@ export default function NoteEditor() {
             </div>
             {currentNote?.collaborators?.length > 0 && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Current Collaborators
                 </label>
                 <div className="space-y-2">
                   {currentNote.collaborators.map((c) => (
                     <div
                       key={c._id}
-                      className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
+                      className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded-lg"
                     >
                       <div className="flex items-center space-x-2">
                         <Avatar
@@ -671,7 +959,7 @@ export default function NoteEditor() {
                         </Avatar>
                         <span className="text-sm">{c.user?.email}</span>
                       </div>
-                      <span className="text-xs text-gray-500 capitalize">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">
                         {c.permission}
                       </span>
                     </div>
@@ -716,21 +1004,27 @@ export default function NoteEditor() {
               )}
               <button
                 onClick={() => setSummaryModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg"
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
               >
                 <CloseIcon />
               </button>
             </div>
           </div>
           {summaryNeedsRegeneration && (
-            <div className="mb-4 p-3 rounded-xl bg-amber-50 text-amber-800 text-sm">
+            <div className="mb-4 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 text-sm">
               You have new changes in this note. Click regenerate to refresh the
               summary.
             </div>
           )}
-          <div className="bg-gray-50 p-4 rounded-xl max-h-[70vh] overflow-auto">
-            {renderFormattedSummary(summary)}
-          </div>
+          {aiLoading ? (
+            <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl max-h-[70vh] overflow-auto min-h-[240px] flex items-center justify-center">
+              <div className="spinner" />
+            </div>
+          ) : (
+            <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl max-h-[70vh] overflow-auto">
+              {renderFormattedSummary(summary)}
+            </div>
+          )}
         </div>
       </Dialog>
 
@@ -753,21 +1047,21 @@ export default function NoteEditor() {
               </button>
               <button
                 onClick={() => setQuizModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg"
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
               >
                 <CloseIcon />
               </button>
             </div>
           </div>
           {quizResult && (
-            <div className="mb-4 p-3 rounded-xl bg-primary-50 text-primary-800 text-sm font-medium">
+            <div className="mb-4 p-3 rounded-xl bg-primary-50 dark:bg-primary-600/20 text-primary-800 dark:text-primary-200 text-sm font-medium">
               Score: {quizResult.score}/{quizResult.totalQuestions} (
               {quizResult.percentage}%)
             </div>
           )}
           {quiz?.questions?.map((q, i) => (
-            <div key={i} className="mb-6 p-4 bg-gray-50 rounded-xl">
-              <p className="font-medium mb-3">
+            <div key={i} className="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
+              <p className="font-medium text-gray-900 dark:text-gray-100 mb-3">
                 {i + 1}. {q.question}
               </p>
               <div className="space-y-2">
@@ -782,10 +1076,10 @@ export default function NoteEditor() {
                           ? "border-green-500 bg-green-50"
                           : selectedAnswers[i] === j
                             ? "border-red-500 bg-red-50"
-                            : "border-gray-200"
+                            : "border-gray-200 dark:border-gray-700"
                         : selectedAnswers[i] === j
-                          ? "border-primary-500 bg-primary-50"
-                          : "border-gray-200 hover:border-primary-300"
+                          ? "border-primary-500 bg-primary-50 dark:bg-primary-600/20"
+                          : "border-gray-200 dark:border-gray-700 hover:border-primary-300"
                     }`}
                   >
                     {String.fromCharCode(65 + j)}. {opt}
@@ -793,7 +1087,7 @@ export default function NoteEditor() {
                 ))}
               </div>
               {quizSubmitted && q.explanation && (
-                <p className="text-sm text-gray-600 mt-2">💡 {q.explanation}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">💡 {q.explanation}</p>
               )}
             </div>
           ))}

@@ -182,7 +182,7 @@ export default function Semesters() {
                     </button>
                   </div>
                 </div>
-                <Link to={`/semesters/${sem._id}/subjects`}>
+                <Link to={`/institutions/${institutionId}/content?semester=${sem._id}`}>
                   <h3 className="text-lg font-semibold text-gray-900 hover:text-primary-600 transition-colors">
                     {sem.name}
                   </h3>
@@ -196,7 +196,7 @@ export default function Semesters() {
                   )}
                   <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between text-sm text-gray-500">
                     <span>{sem.subjectCount || 0} Subjects</span>
-                    <span className="text-primary-600">View →</span>
+                    <span className="text-primary-600">Open →</span>
                   </div>
                 </Link>
               </motion.div>

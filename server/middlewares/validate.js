@@ -15,6 +15,16 @@ const validate = (req, res, next) => {
   next();
 };
 
+const passwordPolicy = body("password")
+  .notEmpty()
+  .withMessage("Password is required")
+  .isLength({ min: 8 })
+  .withMessage("Password must be at least 8 characters")
+  .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+  .withMessage(
+    "Password must contain at least one uppercase, one lowercase, and one number",
+  );
+
 const authValidation = {
   register: [
     body("name")
@@ -30,15 +40,7 @@ const authValidation = {
       .isEmail()
       .withMessage("Invalid email format")
       .normalizeEmail({ gmail_remove_subaddress: false }),
-    body("password")
-      .notEmpty()
-      .withMessage("Password is required")
-      .isLength({ min: 8 })
-      .withMessage("Password must be at least 8 characters")
-      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
-      .withMessage(
-        "Password must contain at least one uppercase, one lowercase, and one number",
-      ),
+    passwordPolicy,
     validate,
   ],
   login: [
@@ -89,15 +91,31 @@ const authValidation = {
     validate,
   ],
   resetPassword: [
-    body("password")
+    passwordPolicy,
+    validate,
+  ],
+  updatePassword: [
+    body("currentPassword").notEmpty().withMessage("Current password is required"),
+    body("newPassword")
       .notEmpty()
-      .withMessage("Password is required")
+      .withMessage("New password is required")
       .isLength({ min: 8 })
       .withMessage("Password must be at least 8 characters")
       .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
       .withMessage(
         "Password must contain at least one uppercase, one lowercase, and one number",
       ),
+    validate,
+  ],
+  acceptAdminInvite: [
+    body("token").trim().notEmpty().withMessage("Invitation token is required"),
+    body("name")
+      .trim()
+      .notEmpty()
+      .withMessage("Name is required")
+      .isLength({ min: 2, max: 50 })
+      .withMessage("Name must be between 2 and 50 characters"),
+    passwordPolicy,
     validate,
   ],
 };
@@ -243,15 +261,26 @@ const commentValidation = {
   create: [
     body("noteId").isMongoId().withMessage("Invalid note ID"),
     body("content")
+      .optional()
       .trim()
-      .notEmpty()
-      .withMessage("Comment content is required")
       .isLength({ max: 5000 })
       .withMessage("Comment cannot exceed 5000 characters"),
+    body("content").custom((value, { req }) => {
+      const hasText = typeof value === "string" && value.trim().length > 0;
+      const hasAudio = Boolean(req.file);
+      if (!hasText && !hasAudio) {
+        throw new Error("Comment must include text or a voice recording");
+      }
+      return true;
+    }),
     body("parentCommentId")
       .optional()
       .isMongoId()
       .withMessage("Invalid parent comment ID"),
+    body("recordingDuration")
+      .optional()
+      .isFloat({ min: 0, max: 600 })
+      .withMessage("Recording duration must be between 0 and 600 seconds"),
     validate,
   ],
   update: [
@@ -262,6 +291,61 @@ const commentValidation = {
       .withMessage("Comment content is required")
       .isLength({ max: 5000 })
       .withMessage("Comment cannot exceed 5000 characters"),
+    validate,
+  ],
+};
+
+const contactValidation = {
+  create: [
+    body("name")
+      .trim()
+      .notEmpty()
+      .withMessage("Name is required")
+      .isLength({ max: 100 })
+      .withMessage("Name cannot exceed 100 characters"),
+    body("email")
+      .trim()
+      .notEmpty()
+      .withMessage("Email is required")
+      .isEmail()
+      .withMessage("Invalid email format")
+      .normalizeEmail({ gmail_remove_subaddress: false }),
+    body("subject")
+      .trim()
+      .notEmpty()
+      .withMessage("Subject is required")
+      .isLength({ max: 200 })
+      .withMessage("Subject cannot exceed 200 characters"),
+    body("message")
+      .trim()
+      .notEmpty()
+      .withMessage("Message is required")
+      .isLength({ max: 10000 })
+      .withMessage("Message cannot exceed 10000 characters"),
+    validate,
+  ],
+  updateStatus: [
+    param("id").isMongoId().withMessage("Invalid contact ID"),
+    body("status")
+      .notEmpty()
+      .withMessage("Status is required")
+      .isIn(["new", "in_progress", "replied", "closed"])
+      .withMessage("Invalid contact status"),
+    validate,
+  ],
+  assign: [
+    param("id").isMongoId().withMessage("Invalid contact ID"),
+    body("adminId").isMongoId().withMessage("Invalid admin ID"),
+    validate,
+  ],
+  reply: [
+    param("id").isMongoId().withMessage("Invalid contact ID"),
+    body("message")
+      .trim()
+      .notEmpty()
+      .withMessage("Reply message is required")
+      .isLength({ max: 5000 })
+      .withMessage("Reply cannot exceed 5000 characters"),
     validate,
   ],
 };
@@ -279,5 +363,6 @@ module.exports = {
   subjectValidation,
   noteValidation,
   commentValidation,
+  contactValidation,
   mongoIdParam,
 };

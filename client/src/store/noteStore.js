@@ -7,6 +7,8 @@ const useNoteStore = create((set, get) => ({
   subjects: [],
   notes: [],
   currentNote: null,
+  comments: [],
+  commentsPagination: null,
   pagination: null,
   isLoading: false,
   error: null,
@@ -228,6 +230,57 @@ const useNoteStore = create((set, get) => ({
     return response.data.data;
   },
 
+  fetchComments: async (noteId, params = {}) => {
+    const response = await api.get(`/comments/note/${noteId}`, { params });
+    set({
+      comments: response.data.data.comments,
+      commentsPagination: response.data.data.pagination,
+    });
+    return response.data.data;
+  },
+
+  createComment: async ({ noteId, content, parentCommentId, audioBlob, recordingDuration }) => {
+    const formData = new FormData();
+    formData.append("noteId", noteId);
+    if (typeof content === "string") {
+      formData.append("content", content);
+    }
+    if (parentCommentId) {
+      formData.append("parentCommentId", parentCommentId);
+    }
+    if (audioBlob) {
+      const extension = audioBlob.type.includes("mp4") ? "mp4" : "webm";
+      formData.append("audio", audioBlob, `voice-comment.${extension}`);
+      if (typeof recordingDuration === "number") {
+        formData.append("recordingDuration", recordingDuration.toString());
+      }
+    }
+
+    const response = await api.post("/comments", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+
+    set((state) => ({
+      comments: [response.data.data.comment, ...state.comments],
+    }));
+
+    return response.data.data.comment;
+  },
+
+  deleteComment: async (commentId) => {
+    await api.delete(`/comments/${commentId}`);
+    set((state) => ({
+      comments: state.comments
+        .filter((comment) => comment._id !== commentId)
+        .map((comment) => ({
+          ...comment,
+          replies: Array.isArray(comment.replies)
+            ? comment.replies.filter((reply) => reply._id !== commentId)
+            : [],
+        })),
+    }));
+  },
+
   extractText: async (imageUrl) => {
     const response = await api.post("/notes/extract-text", { imageUrl });
     return response.data.data.extractedText;
@@ -235,6 +288,7 @@ const useNoteStore = create((set, get) => ({
 
   setCurrentNote: (note) => set({ currentNote: note }),
   clearCurrentNote: () => set({ currentNote: null }),
+  clearComments: () => set({ comments: [], commentsPagination: null }),
   clearError: () => set({ error: null }),
 }));
 

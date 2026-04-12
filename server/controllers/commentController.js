@@ -2,17 +2,18 @@ const { Comment, Note, User } = require("../models");
 const { asyncHandler, AppError } = require("../middlewares");
 const { notificationService } = require("../services");
 const { detectLanguage, isRtlText } = require("../utils");
+const { uploadToCloudinary, deleteFromCloudinary } = require("../config/cloudinary");
 
 const createComment = asyncHandler(async (req, res) => {
-  const { noteId, content, parentCommentId } = req.body;
+  const { noteId, content, parentCommentId, recordingDuration } = req.body;
 
   const note = await Note.findById(noteId);
   if (!note) {
     throw new AppError("Note not found", 404);
   }
 
-  if (!note.canUserAccess(req.user._id)) {
-    throw new AppError("You do not have access to this note", 403);
+  if (!note.canUserComment(req.user._id)) {
+    throw new AppError("You do not have permission to comment on this note", 403);
   }
 
   let parentComment = null;
@@ -23,21 +24,34 @@ const createComment = asyncHandler(async (req, res) => {
     }
   }
 
+  let audio = null;
+  if (req.file) {
+    const uploadedAudio = await uploadToCloudinary(req.file.buffer, "vpad/comments");
+    audio = {
+      ...uploadedAudio,
+      duration: Number(recordingDuration) || undefined,
+      mimeType: req.file.mimetype,
+    };
+  }
+
+  const commentContent = typeof content === "string" ? content.trim() : "";
+
   const mentionRegex = /@\[([^\]]+)\]\(([^)]+)\)/g;
   const mentions = [];
   let match;
-  while ((match = mentionRegex.exec(content)) !== null) {
+  while ((match = mentionRegex.exec(commentContent)) !== null) {
     mentions.push(match[2]);
   }
 
   const comment = await Comment.create({
     note: noteId,
     user: req.user._id,
-    content,
-    language: detectLanguage(content),
-    isRtl: isRtlText(content),
+    content: commentContent,
+    language: detectLanguage(commentContent),
+    isRtl: isRtlText(commentContent),
     parentComment: parentCommentId || null,
     mentions,
+    audio,
   });
 
   await comment.populate("user", "name profilePicture");
@@ -188,9 +202,14 @@ const deleteComment = asyncHandler(async (req, res) => {
     throw new AppError("Comment not found", 404);
   }
 
+  if (comment.audio?.publicId) {
+    await deleteFromCloudinary(comment.audio.publicId).catch(console.error);
+  }
+
   comment.isDeleted = true;
   comment.deletedAt = new Date();
   comment.content = "[This comment has been deleted]";
+  comment.audio = undefined;
   await comment.save();
 
   const io = req.app.get("io");

@@ -18,11 +18,11 @@ const getNotificationIcon = (type) => {
   switch (type) {
     case "note_shared":
       return ShareIcon;
-    case "note_edited":
-      return NoteIcon;
     case "comment_added":
     case "comment_reply":
       return CommentIcon;
+    case "mention":
+      return NoteIcon;
     case "announcement":
       return CampaignIcon;
     default:
@@ -34,11 +34,11 @@ const getNotificationColor = (type) => {
   switch (type) {
     case "note_shared":
       return "bg-blue-500";
-    case "note_edited":
-      return "bg-green-500";
     case "comment_added":
     case "comment_reply":
       return "bg-purple-500";
+    case "mention":
+      return "bg-green-500";
     case "announcement":
       return "bg-orange-500";
     default:
@@ -79,8 +79,8 @@ export default function Notifications() {
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Notifications</h1>
-          <p className="text-gray-600">Stay updated with your activity</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Notifications</h1>
+          <p className="text-gray-600 dark:text-gray-400">Stay updated with your activity</p>
         </div>
         {notifications.some((n) => !n.isRead) && (
           <button
@@ -97,8 +97,8 @@ export default function Notifications() {
           onClick={() => setFilter("all")}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
             filter === "all"
-              ? "bg-primary-100 text-primary-600"
-              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              ? "bg-primary-100 dark:bg-primary-600/20 text-primary-600 dark:text-primary-300"
+              : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
           }`}
         >
           All
@@ -107,8 +107,8 @@ export default function Notifications() {
           onClick={() => setFilter("unread")}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
             filter === "unread"
-              ? "bg-primary-100 text-primary-600"
-              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              ? "bg-primary-100 dark:bg-primary-600/20 text-primary-600 dark:text-primary-300"
+              : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
           }`}
         >
           Unread
@@ -134,7 +134,7 @@ export default function Notifications() {
                   exit={{ opacity: 0, x: -100 }}
                   className={`card flex items-start space-x-4 ${
                     !notification.isRead
-                      ? "bg-primary-50/50 border-primary-100"
+                      ? "bg-primary-50/50 dark:bg-primary-600/10 border-primary-100 dark:border-primary-500/30"
                       : ""
                   }`}
                 >
@@ -147,10 +147,10 @@ export default function Notifications() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="font-medium text-gray-900">
+                        <p className="font-medium text-gray-900 dark:text-gray-100">
                           {notification.title}
                         </p>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
                           {notification.message}
                         </p>
                         <div className="flex items-center space-x-3 mt-2">
@@ -162,12 +162,12 @@ export default function Notifications() {
                               >
                                 {notification.sender.name?.charAt(0)}
                               </Avatar>
-                              <span className="text-xs text-gray-500">
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
                                 {notification.sender.name}
                               </span>
                             </div>
                           )}
-                          <span className="text-xs text-gray-400">
+                          <span className="text-xs text-gray-400 dark:text-gray-500">
                             {formatDistanceToNow(
                               new Date(notification.createdAt),
                               { addSuffix: true }
@@ -180,7 +180,7 @@ export default function Notifications() {
                         {!notification.isRead && (
                           <button
                             onClick={() => markAsRead(notification._id)}
-                            className="p-1.5 hover:bg-gray-100 rounded-lg"
+                            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                             title="Mark as read"
                           >
                             <CheckIcon
@@ -191,7 +191,7 @@ export default function Notifications() {
                         )}
                         <button
                           onClick={() => handleDelete(notification._id)}
-                          className="p-1.5 hover:bg-red-50 rounded-lg"
+                          className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
                           title="Delete"
                         >
                           <DeleteIcon
@@ -219,7 +219,7 @@ export default function Notifications() {
           {pagination && pagination.page < pagination.totalPages && (
             <button
               onClick={() => fetchNotifications({ page: pagination.page + 1 })}
-              className="w-full py-3 text-center text-primary-600 hover:bg-gray-50 rounded-xl"
+              className="w-full py-3 text-center text-primary-600 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl"
             >
               Load More
             </button>
@@ -228,15 +228,15 @@ export default function Notifications() {
       ) : (
         <div className="card text-center py-16">
           <NotificationsIcon
-            className="text-gray-300 mb-4"
+            className="text-gray-300 dark:text-gray-600 mb-4"
             style={{ fontSize: 64 }}
           />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
             {filter === "unread"
               ? "No Unread Notifications"
               : "No Notifications"}
           </h3>
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-400">
             {filter === "unread"
               ? "You're all caught up!"
               : "Notifications about your activity will appear here"}

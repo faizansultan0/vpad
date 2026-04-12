@@ -14,6 +14,7 @@ const allPermissions = [
   "manage_users",
   "manage_admins",
   "manage_notes",
+  "manage_contacts",
   "send_announcements",
   "view_analytics",
   "manage_settings",

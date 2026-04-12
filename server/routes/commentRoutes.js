@@ -1,11 +1,23 @@
 const express = require("express");
 const router = express.Router();
 const { commentController } = require("../controllers");
-const { protect, commentValidation, mongoIdParam } = require("../middlewares");
+const {
+  protect,
+  commentValidation,
+  mongoIdParam,
+  uploadAudio,
+  handleUploadError,
+} = require("../middlewares");
 
 router.use(protect);
 
-router.post("/", commentValidation.create, commentController.createComment);
+router.post(
+  "/",
+  uploadAudio.single("audio"),
+  handleUploadError,
+  commentValidation.create,
+  commentController.createComment,
+);
 router.get("/note/:noteId", commentController.getComments);
 
 router

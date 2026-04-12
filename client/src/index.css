@@ -17,15 +17,15 @@
   }
 
   .btn-secondary {
-    @apply bg-white text-gray-700 px-6 py-3 rounded-xl font-semibold border border-gray-200 hover:border-primary-300 hover:bg-gray-50 transition-all duration-200;
+    @apply bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 px-6 py-3 rounded-xl font-semibold border border-gray-200 dark:border-gray-700 hover:border-primary-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200;
   }
 
   .card {
-    @apply bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200;
+    @apply bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 hover:shadow-md transition-shadow duration-200;
   }
 
   .input-field {
-    @apply w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all duration-200;
+    @apply w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all duration-200;
   }
 
   .glass {
@@ -105,11 +105,11 @@
 }
 
 .ProseMirror blockquote {
-  @apply border-l-4 border-primary-500 pl-4 italic text-gray-600 my-4;
+  @apply border-l-4 border-primary-500 pl-4 italic text-gray-600 dark:text-gray-300 my-4;
 }
 
 .ProseMirror code {
-  @apply bg-gray-100 px-2 py-0.5 rounded text-sm font-mono;
+  @apply bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-sm font-mono;
 }
 
 .ProseMirror pre {
@@ -129,7 +129,7 @@
 }
 
 .ProseMirror hr {
-  @apply my-6 border-gray-200;
+  @apply my-6 border-gray-200 dark:border-gray-700;
 }
 
 .ProseMirror .mention {
@@ -143,11 +143,11 @@
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-gray-100 rounded-full;
+  @apply bg-gray-100 dark:bg-gray-800 rounded-full;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 rounded-full hover:bg-gray-400;
+  @apply bg-gray-300 dark:bg-gray-600 rounded-full hover:bg-gray-400 dark:hover:bg-gray-500;
 }
 
 /* Loading Spinner */

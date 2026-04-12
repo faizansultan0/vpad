@@ -304,8 +304,6 @@ const inviteAdmin = asyncHandler(async (req, res) => {
     adminInvitePermissions: permissions || [],
   });
 
-  await pendingAdmin.save();
-
   const adminClientUrl = process.env.ADMIN_URL || "http://localhost:3001";
   const inviteUrl = `${adminClientUrl}/accept-invite?token=${inviteToken}`;
 
@@ -314,11 +312,18 @@ const inviteAdmin = asyncHandler(async (req, res) => {
     inviteUrl,
     permissions || [],
   );
-  await sendEmail({
-    to: email,
-    subject: emailContent.subject,
-    html: emailContent.html,
-  });
+  await pendingAdmin.save();
+
+  try {
+    await sendEmail({
+      to: email,
+      subject: emailContent.subject,
+      html: emailContent.html,
+    });
+  } catch (error) {
+    await User.deleteOne({ _id: pendingAdmin._id }).catch(() => {});
+    throw new AppError("Failed to send invitation email. Please try again.", 500);
+  }
 
   res.status(201).json({
     success: true,

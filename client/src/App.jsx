@@ -10,6 +10,8 @@ import Home from "./pages/public/Home";
 import Services from "./pages/public/Services";
 import About from "./pages/public/About";
 import Contact from "./pages/public/Contact";
+import Terms from "./pages/public/Terms";
+import Privacy from "./pages/public/Privacy";
 
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
@@ -19,6 +21,7 @@ import VerifyEmail from "./pages/auth/VerifyEmail";
 
 import Dashboard from "./pages/dashboard/Dashboard";
 import Institutions from "./pages/dashboard/Institutions";
+import InstitutionContent from "./pages/dashboard/InstitutionContent";
 import Semesters from "./pages/dashboard/Semesters";
 import Subjects from "./pages/dashboard/Subjects";
 import Notes from "./pages/dashboard/Notes";
@@ -60,6 +63,8 @@ function App() {
         <Route path="/services" element={<Services />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/privacy" element={<Privacy />} />
         <Route
           path="/login"
           element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />}
@@ -86,8 +91,12 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/institutions" element={<Institutions />} />
         <Route
+          path="/institutions/:institutionId/content"
+          element={<InstitutionContent />}
+        />
+        <Route
           path="/institutions/:institutionId/semesters"
-          element={<Semesters />}
+          element={<Navigate to="../content" replace />}
         />
         <Route path="/semesters/:semesterId/subjects" element={<Subjects />} />
         <Route path="/subjects/:subjectId/notes" element={<Notes />} />

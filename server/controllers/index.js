@@ -6,6 +6,7 @@ const noteController = require("./noteController");
 const commentController = require("./commentController");
 const notificationController = require("./notificationController");
 const adminController = require("./adminController");
+const contactController = require("./contactController");
 
 module.exports = {
   authController,
@@ -16,4 +17,5 @@ module.exports = {
   commentController,
   notificationController,
   adminController,
+  contactController,
 };

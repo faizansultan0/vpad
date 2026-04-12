@@ -244,19 +244,6 @@ const updateNote = asyncHandler(async (req, res) => {
     },
   });
 
-  const collaboratorIds = note.collaborators.map((c) => c.user.toString());
-  if (note.user.toString() !== req.user._id.toString()) {
-    collaboratorIds.push(note.user.toString());
-  }
-
-  if (collaboratorIds.length > 0) {
-    await notificationService.notifyNoteEdited(io, {
-      editor: req.user._id,
-      note,
-      collaborators: collaboratorIds,
-    });
-  }
-
   res.json({
     success: true,
     message: "Note updated successfully",

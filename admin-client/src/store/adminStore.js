@@ -6,6 +6,8 @@ const useAdminStore = create((set) => ({
   users: [],
   admins: [],
   announcements: [],
+  contacts: [],
+  currentContact: null,
   pagination: null,
   isLoading: false,
 
@@ -131,6 +133,70 @@ const useAdminStore = create((set) => ({
     set((state) => ({
       announcements: state.announcements.filter((a) => a._id !== id),
     }));
+  },
+
+  fetchContacts: async (params = {}) => {
+    set({ isLoading: true });
+    try {
+      const response = await api.get("/admin/contacts", { params });
+      set({
+        contacts: response.data.data.contacts,
+        pagination: response.data.data.pagination,
+        isLoading: false,
+      });
+      return response.data.data;
+    } catch (error) {
+      set({ isLoading: false });
+      throw error;
+    }
+  },
+
+  fetchContact: async (id) => {
+    const response = await api.get(`/admin/contacts/${id}`);
+    set({ currentContact: response.data.data.contact });
+    return response.data.data.contact;
+  },
+
+  updateContactStatus: async (id, status) => {
+    const response = await api.patch(`/admin/contacts/${id}/status`, { status });
+    set((state) => ({
+      contacts: state.contacts.map((c) =>
+        c._id === id ? response.data.data.contact : c,
+      ),
+      currentContact:
+        state.currentContact?._id === id
+          ? response.data.data.contact
+          : state.currentContact,
+    }));
+    return response.data.data.contact;
+  },
+
+  assignContact: async (id, adminId) => {
+    const response = await api.patch(`/admin/contacts/${id}/assign`, { adminId });
+    set((state) => ({
+      contacts: state.contacts.map((c) =>
+        c._id === id ? response.data.data.contact : c,
+      ),
+      currentContact:
+        state.currentContact?._id === id
+          ? response.data.data.contact
+          : state.currentContact,
+    }));
+    return response.data.data.contact;
+  },
+
+  replyToContact: async (id, message) => {
+    const response = await api.post(`/admin/contacts/${id}/reply`, { message });
+    set((state) => ({
+      contacts: state.contacts.map((c) =>
+        c._id === id ? response.data.data.contact : c,
+      ),
+      currentContact:
+        state.currentContact?._id === id
+          ? response.data.data.contact
+          : state.currentContact,
+    }));
+    return response.data.data.contact;
   },
 }));
 

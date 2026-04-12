@@ -39,6 +39,27 @@ const imageFilter = (req, file, cb) => {
   }
 };
 
+const audioFilter = (req, file, cb) => {
+  const allowedTypes = [
+    "audio/webm",
+    "audio/mp4",
+    "audio/mpeg",
+    "audio/wav",
+    "audio/ogg",
+  ];
+
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(
+      new Error(
+        "Invalid audio file type. Supported formats: WebM, MP4, MP3, WAV, OGG.",
+      ),
+      false,
+    );
+  }
+};
+
 const upload = multer({
   storage,
   fileFilter,
@@ -60,6 +81,14 @@ const uploadProfilePicture = multer({
   fileFilter: imageFilter,
   limits: {
     fileSize: 2 * 1024 * 1024, // 2MB
+  },
+});
+
+const uploadAudio = multer({
+  storage,
+  fileFilter: audioFilter,
+  limits: {
+    fileSize: 20 * 1024 * 1024,
   },
 });
 
@@ -89,5 +118,6 @@ module.exports = {
   upload,
   uploadImage,
   uploadProfilePicture,
+  uploadAudio,
   handleUploadError,
 };

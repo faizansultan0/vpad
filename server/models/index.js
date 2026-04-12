@@ -7,6 +7,7 @@ const Comment = require("./Comment");
 const Notification = require("./Notification");
 const Announcement = require("./Announcement");
 const PendingSignup = require("./PendingSignup");
+const Contact = require("./Contact");
 
 module.exports = {
   User,
@@ -18,4 +19,5 @@ module.exports = {
   Notification,
   Announcement,
   PendingSignup,
+  Contact,
 };

@@ -1,11 +1,12 @@
 const express = require("express");
 const router = express.Router();
-const { adminController } = require("../controllers");
+const { adminController, contactController } = require("../controllers");
 const {
   protect,
   restrictTo,
   hasPermission,
   mongoIdParam,
+  contactValidation,
 } = require("../middlewares");
 
 router.use(protect);
@@ -35,6 +36,36 @@ router.delete(
   hasPermission("manage_users"),
   mongoIdParam,
   adminController.deleteUser,
+);
+
+router.get(
+  "/contacts",
+  hasPermission("manage_contacts"),
+  contactController.getContacts,
+);
+router.get(
+  "/contacts/:id",
+  hasPermission("manage_contacts"),
+  mongoIdParam,
+  contactController.getContact,
+);
+router.patch(
+  "/contacts/:id/status",
+  hasPermission("manage_contacts"),
+  contactValidation.updateStatus,
+  contactController.updateContactStatus,
+);
+router.patch(
+  "/contacts/:id/assign",
+  hasPermission("manage_contacts"),
+  contactValidation.assign,
+  contactController.assignContact,
+);
+router.post(
+  "/contacts/:id/reply",
+  hasPermission("manage_contacts"),
+  contactValidation.reply,
+  contactController.replyToContact,
 );
 
 router.use(restrictTo("superadmin"));

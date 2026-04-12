@@ -9,6 +9,7 @@ const {
   upload,
   uploadImage,
   uploadProfilePicture,
+  uploadAudio,
   handleUploadError,
 } = require("./upload");
 const {
@@ -19,6 +20,7 @@ const {
   subjectValidation,
   noteValidation,
   commentValidation,
+  contactValidation,
   mongoIdParam,
 } = require("./validate");
 const {
@@ -41,6 +43,7 @@ module.exports = {
   upload,
   uploadImage,
   uploadProfilePicture,
+  uploadAudio,
   handleUploadError,
   validate,
   authValidation,
@@ -49,6 +52,7 @@ module.exports = {
   subjectValidation,
   noteValidation,
   commentValidation,
+  contactValidation,
   mongoIdParam,
   generalLimiter,
   authLimiter,

@@ -33,6 +33,11 @@ export default function Notes() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [formData, setFormData] = useState({ title: "" });
   const [initialLoading, setInitialLoading] = useState(true);
+  const institutionIdFromSubject =
+    subject?.institution?._id ||
+    subject?.institution ||
+    subject?.semester?.institution?._id ||
+    subject?.semester?.institution;
 
   useEffect(() => {
     const load = async () => {
@@ -82,9 +87,9 @@ export default function Notes() {
           <Link
             to={
               subject?.semester
-                ? `/semesters/${
+                ? `/institutions/${institutionIdFromSubject}/content?semester=${
                     subject.semester._id || subject.semester
-                  }/subjects`
+                  }&subject=${subjectId}`
                 : "/institutions"
             }
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore, useNotificationStore } from "../store";
 import { motion, AnimatePresence } from "framer-motion";
@@ -27,6 +27,34 @@ export default function DashboardLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    const applyTheme = () => {
+      const preference = user?.preferences?.theme || "light";
+      if (preference === "dark") {
+        setIsDarkMode(true);
+        return;
+      }
+      if (preference === "light") {
+        setIsDarkMode(false);
+        return;
+      }
+
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      setIsDarkMode(prefersDark);
+    };
+
+    applyTheme();
+
+    if (user?.preferences?.theme !== "system") return;
+
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const onChange = () => applyTheme();
+    mediaQuery.addEventListener("change", onChange);
+
+    return () => mediaQuery.removeEventListener("change", onChange);
+  }, [user?.preferences?.theme]);
 
   const handleLogout = async () => {
     await logout();
@@ -34,14 +62,14 @@ export default function DashboardLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className={`min-h-screen flex ${isDarkMode ? "dark bg-gray-900" : "bg-gray-50"}`}>
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static ${
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="flex flex-col h-full">
-          <div className="flex items-center justify-between p-4 border-b border-gray-100">
+          <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700">
             <Link to="/dashboard" className="flex items-center space-x-2">
               <div className="w-10 h-10 rounded-xl gradient-bg flex items-center justify-center">
                 <span className="text-white font-bold text-xl">V</span>
@@ -70,8 +98,8 @@ export default function DashboardLayout() {
                   onClick={() => setSidebarOpen(false)}
                   className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${
                     isActive
-                      ? "bg-primary-50 text-primary-600"
-                      : "text-gray-600 hover:bg-gray-50"
+                      ? "bg-primary-50 dark:bg-primary-600/20 text-primary-600 dark:text-primary-300"
+                      : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
                   }`}
                 >
                   {showBadge ? (
@@ -87,7 +115,7 @@ export default function DashboardLayout() {
             })}
           </nav>
 
-          <div className="p-4 border-t border-gray-100">
+          <div className="p-4 border-t border-gray-100 dark:border-gray-700">
             <div className="flex items-center space-x-3 mb-4">
               <Avatar
                 src={user?.profilePicture?.url}
@@ -97,15 +125,15 @@ export default function DashboardLayout() {
                 {user?.name?.charAt(0)}
               </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                   {user?.name}
                 </p>
-                <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
               </div>
             </div>
             <button
               onClick={handleLogout}
-              className="w-full flex items-center justify-center space-x-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+              className="w-full flex items-center justify-center space-x-2 px-4 py-2 text-sm text-red-600 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
             >
               <LogoutIcon fontSize="small" />
               <span>Logout</span>
@@ -122,10 +150,10 @@ export default function DashboardLayout() {
       )}
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-lg border-b border-gray-100 lg:hidden">
+        <header className="sticky top-0 z-30 bg-white/80 dark:bg-gray-900/90 backdrop-blur-lg border-b border-gray-100 dark:border-gray-700 lg:hidden">
           <div className="flex items-center justify-between px-4 h-16">
             <button
-              className="p-2 text-gray-600 hover:text-gray-900"
+              className="p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
               onClick={() => setSidebarOpen(true)}
             >
               <MenuIcon />
@@ -148,7 +176,7 @@ export default function DashboardLayout() {
           </div>
         </header>
 
-        <main className="flex-1 p-4 lg:p-8 overflow-auto">
+        <main className="flex-1 p-4 lg:p-8 overflow-auto text-gray-900 dark:text-gray-100">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}

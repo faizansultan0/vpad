@@ -1,19 +1,44 @@
 const nodemailer = require("nodemailer");
 
+const emailPort = parseInt(process.env.EMAIL_PORT || "587", 10);
+const emailSecure =
+  process.env.EMAIL_SECURE === "true" ||
+  process.env.EMAIL_SECURE === "1" ||
+  emailPort === 465;
+
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
-  port: process.env.EMAIL_PORT,
-  secure: process.env.EMAIL_PORT === "465",
+  port: emailPort,
+  secure: emailSecure,
+  requireTLS: !emailSecure,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
+  tls: {
+    minVersion: "TLSv1.2",
+    rejectUnauthorized: false,
+  },
 });
+
+const verifyEmailTransport = async () => {
+  try {
+    await transporter.verify();
+    console.log(
+      `Email transport is ready (${process.env.EMAIL_HOST}:${emailPort}, secure=${emailSecure})`,
+    );
+  } catch (error) {
+    console.error("Email transport verification failed:", error.message);
+    console.error(
+      "Check EMAIL_HOST, EMAIL_PORT, EMAIL_USER, EMAIL_PASS, EMAIL_FROM, and EMAIL_SECURE env values.",
+    );
+  }
+};
 
 const sendEmail = async ({ to, subject, html, text }) => {
   try {
     const mailOptions = {
-      from: process.env.EMAIL_FROM,
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
       to,
       subject,
       html,
@@ -266,5 +291,6 @@ const emailTemplates = {
 
 module.exports = {
   sendEmail,
+  verifyEmailTransport,
   emailTemplates,
 };

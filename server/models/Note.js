@@ -292,6 +292,22 @@ noteSchema.methods.canUserEdit = function (userId) {
   return collaborator && ["edit", "admin"].includes(collaborator.permission);
 };
 
+noteSchema.methods.canUserComment = function (userId) {
+  const noteUserId = this.user._id
+    ? this.user._id.toString()
+    : this.user.toString();
+  if (noteUserId === userId.toString()) return true;
+
+  const collaborator = this.collaborators.find((collab) => {
+    const collabUserId = collab.user._id
+      ? collab.user._id.toString()
+      : collab.user.toString();
+    return collabUserId === userId.toString();
+  });
+
+  return collaborator && ["edit", "admin"].includes(collaborator.permission);
+};
+
 noteSchema.methods.addToHistory = function (userId, content, description) {
   this.editHistory.push({
     user: userId,
