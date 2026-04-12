@@ -84,17 +84,27 @@ const renderFormattedSummary = (summaryText) => {
 
     if (listType === "ol") {
       blocks.push(
-        <ol key={`ol-${keyCounter++}`} className="list-decimal list-inside space-y-1">
+        <ol
+          key={`ol-${keyCounter++}`}
+          className="list-decimal list-inside space-y-1"
+        >
           {listItems.map((item, index) => (
-            <li key={`${index}-${item.slice(0, 16)}`}>{renderInlineMarkdown(item)}</li>
+            <li key={`${index}-${item.slice(0, 16)}`}>
+              {renderInlineMarkdown(item)}
+            </li>
           ))}
         </ol>,
       );
     } else {
       blocks.push(
-        <ul key={`ul-${keyCounter++}`} className="list-disc list-inside space-y-1">
+        <ul
+          key={`ul-${keyCounter++}`}
+          className="list-disc list-inside space-y-1"
+        >
           {listItems.map((item, index) => (
-            <li key={`${index}-${item.slice(0, 16)}`}>{renderInlineMarkdown(item)}</li>
+            <li key={`${index}-${item.slice(0, 16)}`}>
+              {renderInlineMarkdown(item)}
+            </li>
           ))}
         </ul>,
       );
