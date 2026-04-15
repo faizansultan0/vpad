@@ -11,6 +11,11 @@ import toast from "react-hot-toast";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import AddIcon from "@mui/icons-material/Add";
 import NoteIcon from "@mui/icons-material/Note";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import DownloadIcon from "@mui/icons-material/Download";
+import PushPinIcon from "@mui/icons-material/PushPin";
+import StarIcon from "@mui/icons-material/Star";
 import SearchIcon from "@mui/icons-material/Search";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
@@ -27,7 +32,7 @@ const semesterTypes = [
 
 export default function InstitutionContent() {
   const { institutionId } = useParams();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const {
     institutions,
@@ -39,8 +44,11 @@ export default function InstitutionContent() {
     fetchSubjects,
     fetchNotes,
     createNote,
+    deleteNote,
     createSemester,
     createSubject,
+    fetchNoteForDownload,
+    downloadNoteAsPdf,
     isLoading,
   } = useNoteStore();
 
@@ -50,6 +58,8 @@ export default function InstitutionContent() {
   const [isInitializing, setIsInitializing] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [newNoteTitle, setNewNoteTitle] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [downloadingNoteId, setDownloadingNoteId] = useState(null);
   const [semesterModalOpen, setSemesterModalOpen] = useState(false);
   const [subjectModalOpen, setSubjectModalOpen] = useState(false);
   const [semesterForm, setSemesterForm] = useState({
@@ -106,6 +116,43 @@ export default function InstitutionContent() {
     });
   }, [notes, search, selectedSemesterId, selectedSubjectId]);
 
+  const buildContentPath = (semesterId, subjectId) => {
+    if (!institutionId) {
+      return "/institutions";
+    }
+
+    const params = new URLSearchParams();
+    if (semesterId) {
+      params.set("semester", String(semesterId));
+    }
+    if (subjectId) {
+      params.set("subject", String(subjectId));
+    }
+
+    const query = params.toString();
+    return `/institutions/${institutionId}/content${query ? `?${query}` : ""}`;
+  };
+
+  const syncFiltersToUrl = (semesterId, subjectId) => {
+    const next = new URLSearchParams(searchParams);
+
+    if (semesterId) {
+      next.set("semester", String(semesterId));
+    } else {
+      next.delete("semester");
+    }
+
+    if (subjectId) {
+      next.set("subject", String(subjectId));
+    } else {
+      next.delete("subject");
+    }
+
+    if (next.toString() !== searchParams.toString()) {
+      setSearchParams(next, { replace: true });
+    }
+  };
+
   useEffect(() => {
     const initialize = async () => {
       setIsInitializing(true);
@@ -124,6 +171,7 @@ export default function InstitutionContent() {
         if (!firstSemester) {
           setSelectedSemesterId("");
           setSelectedSubjectId("");
+          syncFiltersToUrl("", "");
           setIsInitializing(false);
           return;
         }
@@ -141,8 +189,10 @@ export default function InstitutionContent() {
         if (firstSubject) {
           setSelectedSubjectId(firstSubject._id);
           await fetchNotes({ subjectId: firstSubject._id });
+          syncFiltersToUrl(semesterId, firstSubject._id);
         } else {
           setSelectedSubjectId("");
+          syncFiltersToUrl(semesterId, "");
         }
       } catch (error) {
         toast.error("Failed to load institution content");
@@ -159,6 +209,7 @@ export default function InstitutionContent() {
     setSelectedSubjectId("");
 
     if (!semesterId) {
+      syncFiltersToUrl("", "");
       return;
     }
 
@@ -169,8 +220,10 @@ export default function InstitutionContent() {
       if (firstSubject) {
         setSelectedSubjectId(firstSubject._id);
         await fetchNotes({ subjectId: firstSubject._id });
+        syncFiltersToUrl(semesterId, firstSubject._id);
       } else {
         setSelectedSubjectId("");
+        syncFiltersToUrl(semesterId, "");
       }
     } catch (error) {
       toast.error("Failed to load subjects");
@@ -181,11 +234,13 @@ export default function InstitutionContent() {
     setSelectedSubjectId(subjectId);
 
     if (!subjectId) {
+      syncFiltersToUrl(selectedSemesterId, "");
       return;
     }
 
     try {
       await fetchNotes({ subjectId });
+      syncFiltersToUrl(selectedSemesterId, subjectId);
     } catch (error) {
       toast.error("Failed to load notes");
     }
@@ -207,11 +262,48 @@ export default function InstitutionContent() {
       setModalOpen(false);
       setNewNoteTitle("");
       toast.success("Note created");
-      navigate(`/notes/${note._id}`);
+      navigate(`/notes/${note._id}`, {
+        state: {
+          returnTo: buildContentPath(selectedSemesterId, selectedSubjectId),
+        },
+      });
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to create note");
     }
   };
+
+  const handleDownloadNote = async (event, noteId) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!noteId || downloadingNoteId) return;
+
+    setDownloadingNoteId(noteId);
+    try {
+      const fullNote = await fetchNoteForDownload(noteId);
+      await downloadNoteAsPdf(fullNote);
+      toast.success("PDF downloaded");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to download note");
+    } finally {
+      setDownloadingNoteId(null);
+    }
+  };
+
+  const handleDeleteNote = async () => {
+    try {
+      await deleteNote(deleteConfirm._id);
+      toast.success("Note deleted");
+      setDeleteConfirm(null);
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Delete failed");
+    }
+  };
+
+  const selectedContentPath = buildContentPath(
+    selectedSemesterId,
+    selectedSubjectId,
+  );
 
   const handleCreateSemester = async (e) => {
     e.preventDefault();
@@ -380,27 +472,71 @@ export default function InstitutionContent() {
       ) : filteredNotes.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filteredNotes.map((note) => (
-            <Link
+            <div
               key={note._id}
-              to={`/notes/${note._id}`}
-              className="card hover:shadow-lg transition-shadow"
+              className="card group relative hover:shadow-lg transition-shadow"
             >
-              <div
-                className="w-10 h-10 rounded-lg flex items-center justify-center mb-3"
-                style={{ backgroundColor: note.subject?.color || "#667eea" }}
-              >
-                <NoteIcon className="text-white" fontSize="small" />
+              <div className="absolute top-4 right-4 flex items-center space-x-1">
+                {note.isPinned && (
+                  <PushPinIcon fontSize="small" className="text-primary-500" />
+                )}
+                {note.isFavorite && (
+                  <StarIcon fontSize="small" className="text-yellow-500" />
+                )}
               </div>
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100 line-clamp-2 mb-2">
-                {note.title}
-              </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {note.subject?.name}
-              </p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-                Updated {format(new Date(note.updatedAt), "MMM d, yyyy")}
-              </p>
-            </Link>
+              <Link
+                to={`/notes/${note._id}`}
+                state={{ returnTo: selectedContentPath }}
+                className="block"
+              >
+                <div
+                  className="w-10 h-10 rounded-lg flex items-center justify-center mb-3"
+                  style={{ backgroundColor: note.subject?.color || "#667eea" }}
+                >
+                  <NoteIcon className="text-white" fontSize="small" />
+                </div>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100 line-clamp-2 mb-2">
+                  {note.title}
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {note.subject?.name}
+                </p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+                  Updated {format(new Date(note.updatedAt), "MMM d, yyyy")}
+                </p>
+              </Link>
+              <div className="absolute bottom-4 right-4 flex space-x-1">
+                <button
+                  type="button"
+                  onClick={(event) => handleDownloadNote(event, note._id)}
+                  disabled={downloadingNoteId === note._id}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Download note"
+                >
+                  <DownloadIcon fontSize="small" className="text-gray-500 dark:text-gray-400" />
+                </button>
+                <Link
+                  to={`/notes/${note._id}`}
+                  state={{ returnTo: selectedContentPath }}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+                  title="Open note"
+                >
+                  <EditIcon fontSize="small" className="text-gray-500 dark:text-gray-400" />
+                </Link>
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setDeleteConfirm(note);
+                  }}
+                  className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
+                  title="Delete note"
+                >
+                  <DeleteIcon fontSize="small" className="text-red-500" />
+                </button>
+              </div>
+            </div>
           ))}
         </div>
       ) : (
@@ -419,6 +555,39 @@ export default function InstitutionContent() {
           </p>
         </div>
       )}
+
+      <Dialog
+        open={!!deleteConfirm}
+        onClose={() => setDeleteConfirm(null)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <div className="p-6 text-center">
+          <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+            <DeleteIcon className="text-red-600" fontSize="large" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+            Delete Note?
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            &quot;{deleteConfirm?.title}&quot; will be moved to archive.
+          </p>
+          <div className="flex justify-center gap-3">
+            <button
+              onClick={() => setDeleteConfirm(null)}
+              className="btn-secondary"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDeleteNote}
+              className="bg-red-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-red-700 transition-colors"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </Dialog>
 
       <Dialog
         open={modalOpen}

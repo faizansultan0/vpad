@@ -1,6 +1,120 @@
 import { create } from "zustand";
 import api from "../api/axios";
 
+const escapeHtml = (value = "") =>
+  value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+const sanitizeFileName = (value = "note") => {
+  const sanitized = value
+    .replace(/[<>:\"/\\|?*\x00-\x1F]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 80);
+
+  return sanitized || "note";
+};
+
+const buildNoteHtmlDocument = (note = {}) => {
+  const title =
+    typeof note.title === "string" && note.title.trim()
+      ? note.title.trim()
+      : "Untitled Note";
+  const content = typeof note.content === "string" ? note.content : "";
+  const isRtl = Boolean(note.isRtl) || note.language === "ur";
+  const language = note.language === "ur" ? "ur" : "en";
+  const updatedAt = note.updatedAt
+    ? new Date(note.updatedAt).toLocaleString()
+    : null;
+
+  return `<!doctype html>
+<html lang="${language}" dir="${isRtl ? "rtl" : "ltr"}">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>${escapeHtml(title)}</title>
+    <style>
+      :root {
+        color-scheme: light;
+      }
+
+      body {
+        margin: 0;
+        padding: 28px;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        color: #111827;
+        background: #ffffff;
+      }
+
+      main {
+        max-width: 960px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 1.65rem;
+        line-height: 1.3;
+      }
+
+      .meta {
+        margin-top: 6px;
+        margin-bottom: 22px;
+        font-size: 0.82rem;
+        color: #6b7280;
+      }
+
+      img {
+        max-width: 100%;
+        height: auto;
+      }
+
+      pre {
+        background: #f3f4f6;
+        border-radius: 10px;
+        padding: 12px;
+        overflow-x: auto;
+      }
+
+      code {
+        font-family: "Consolas", "Courier New", monospace;
+      }
+
+      blockquote {
+        margin: 16px 0;
+        padding: 8px 14px;
+        border-left: 4px solid #d1d5db;
+        color: #374151;
+        background: #f9fafb;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        border: 1px solid #e5e7eb;
+        padding: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>${escapeHtml(title)}</h1>
+      ${updatedAt ? `<p class="meta">Updated: ${escapeHtml(updatedAt)}</p>` : ""}
+      <article>${content}</article>
+    </main>
+  </body>
+</html>`;
+};
+
 const useNoteStore = create((set, get) => ({
   institutions: [],
   semesters: [],
@@ -154,6 +268,11 @@ const useNoteStore = create((set, get) => ({
     }
   },
 
+  fetchNoteForDownload: async (id) => {
+    const response = await api.get(`/notes/${id}`);
+    return response.data.data.note;
+  },
+
   createNote: async (data) => {
     const response = await api.post("/notes", data);
     set((state) => ({
@@ -290,6 +409,49 @@ const useNoteStore = create((set, get) => ({
   extractText: async (imageUrl) => {
     const response = await api.post("/notes/extract-text", { imageUrl });
     return response.data.data.extractedText;
+  },
+
+  downloadNoteAsPdf: async (note) => {
+    if (typeof window === "undefined" || typeof document === "undefined") {
+      throw new Error("Download is only available in browser");
+    }
+
+    const title =
+      typeof note?.title === "string" && note.title.trim()
+        ? note.title.trim()
+        : "Untitled Note";
+    const htmlDocument = buildNoteHtmlDocument({ ...note, title });
+    const container = document.createElement("div");
+    container.innerHTML = htmlDocument;
+    container.style.position = "fixed";
+    container.style.left = "-100000px";
+    container.style.top = "0";
+    container.style.width = "794px";
+    container.style.background = "#ffffff";
+
+    document.body.appendChild(container);
+
+    try {
+      const html2pdfModule = await import("html2pdf.js");
+      const html2pdf = html2pdfModule.default || html2pdfModule;
+      const contentRoot = container.querySelector("main") || container;
+
+      await html2pdf()
+        .set({
+          margin: 10,
+          filename: `${sanitizeFileName(title)}.pdf`,
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+          pagebreak: { mode: ["css", "legacy"] },
+        })
+        .from(contentRoot)
+        .save();
+    } finally {
+      if (container.parentNode) {
+        container.parentNode.removeChild(container);
+      }
+    }
   },
 
   setCurrentNote: (note) => set({ currentNote: note }),

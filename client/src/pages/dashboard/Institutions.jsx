@@ -77,7 +77,7 @@ export default function Institutions() {
     try {
       if (editingInstitution) {
         await updateInstitution(editingInstitution._id, formData);
-        toast.success("Institution updated");
+        toast.success("Institution renamed");
       } else {
         await createInstitution(formData);
         toast.success("Institution created");
@@ -140,11 +140,11 @@ export default function Institutions() {
                   >
                     <SchoolIcon className="text-white" fontSize="large" />
                   </div>
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
+                  <div className="flex space-x-1">
                     <button
                       onClick={() => openModal(inst)}
                       className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
-                      title="Edit"
+                      title="Rename institution"
                     >
                       <EditIcon
                         fontSize="small"
@@ -208,7 +208,7 @@ export default function Institutions() {
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold">
-              {editingInstitution ? "Edit Institution" : "Add Institution"}
+              {editingInstitution ? "Rename Institution" : "Add Institution"}
             </h2>
             <button
               onClick={() => setModalOpen(false)}
@@ -294,7 +294,7 @@ export default function Institutions() {
                 Cancel
               </button>
               <button type="submit" className="btn-primary">
-                {editingInstitution ? "Update" : "Create"}
+                {editingInstitution ? "Save Rename" : "Create"}
               </button>
             </div>
           </form>

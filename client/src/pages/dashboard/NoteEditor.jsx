@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useNoteStore, useSocketStore, useAuthStore } from "../../store";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -39,6 +39,7 @@ import Dialog from "@mui/material/Dialog";
 import CloseIcon from "@mui/icons-material/Close";
 import MicIcon from "@mui/icons-material/Mic";
 import StopIcon from "@mui/icons-material/Stop";
+import DownloadIcon from "@mui/icons-material/Download";
 import SendIcon from "@mui/icons-material/Send";
 import DeleteIcon from "@mui/icons-material/Delete";
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
@@ -177,14 +178,38 @@ const renderFormattedSummary = (summaryText) => {
   );
 };
 
+const getSpeechRecognitionConstructor = () => {
+  if (typeof window === "undefined") return null;
+  return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+};
+
+const buildInstitutionContentPath = (institutionId, semesterId, subjectId) => {
+  if (!institutionId) {
+    return "/institutions";
+  }
+
+  const params = new URLSearchParams();
+  if (semesterId) {
+    params.set("semester", String(semesterId));
+  }
+  if (subjectId) {
+    params.set("subject", String(subjectId));
+  }
+
+  const query = params.toString();
+  return `/institutions/${institutionId}/content${query ? `?${query}` : ""}`;
+};
+
 export default function NoteEditor() {
   const { noteId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, accessToken } = useAuthStore();
   const {
     currentNote,
     fetchNote,
     updateNote,
+    deleteNote,
     shareNote,
     summarizeNote,
     generateQuiz,
@@ -194,6 +219,7 @@ export default function NoteEditor() {
     fetchComments,
     createComment,
     deleteComment,
+    downloadNoteAsPdf,
     clearComments,
   } = useNoteStore();
   const { connect, joinNote, leaveNote, activeUsers, on, off, emitNoteChange } =
@@ -223,10 +249,26 @@ export default function NoteEditor() {
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
   const [isCommentSubmitting, setIsCommentSubmitting] = useState(false);
+  const [isDictating, setIsDictating] = useState(false);
+  const [deleteNoteDialogOpen, setDeleteNoteDialogOpen] = useState(false);
   const fetchedRef = useRef(false);
   const recorderRef = useRef(null);
   const recordingStreamRef = useRef(null);
   const recordingIntervalRef = useRef(null);
+  const recognitionRef = useRef(null);
+
+  const noteInstitutionId =
+    currentNote?.institution?._id || currentNote?.institution || null;
+  const noteSemesterId = currentNote?.semester?._id || currentNote?.semester || null;
+  const noteSubjectId = currentNote?.subject?._id || currentNote?.subject || null;
+  const notesListPath =
+    typeof location.state?.returnTo === "string" && location.state.returnTo
+      ? location.state.returnTo
+      : buildInstitutionContentPath(
+          noteInstitutionId,
+          noteSemesterId,
+          noteSubjectId,
+        );
 
   const isOwner =
     String(currentNote?.user?._id || currentNote?.user) === String(user?._id);
@@ -235,6 +277,27 @@ export default function NoteEditor() {
   );
   const canComment =
     isOwner || ["edit", "admin"].includes(collaboratorEntry?.permission);
+  const speechRecognitionSupported = Boolean(getSpeechRecognitionConstructor());
+
+  const stopActiveDictation = useCallback(() => {
+    const recognition = recognitionRef.current;
+
+    if (recognition) {
+      recognition.onresult = null;
+      recognition.onerror = null;
+      recognition.onend = null;
+
+      try {
+        recognition.stop();
+      } catch (error) {
+        // Ignore stop errors caused by inactive recognition instances.
+      }
+
+      recognitionRef.current = null;
+    }
+
+    setIsDictating(false);
+  }, []);
 
   const editor = useEditor({
     extensions: [
@@ -271,12 +334,13 @@ export default function NoteEditor() {
         }
       } catch (error) {
         toast.error("Failed to load note");
-        navigate(-1);
+        navigate("/institutions", { replace: true });
       }
     };
     load();
 
     return () => {
+      stopActiveDictation();
       leaveNote(noteId);
       clearComments();
       if (audioPreviewUrl) {
@@ -286,7 +350,7 @@ export default function NoteEditor() {
         clearInterval(recordingIntervalRef.current);
       }
     };
-  }, [noteId]);
+  }, [noteId, navigate, stopActiveDictation]);
 
   useEffect(() => {
     const handleNoteChange = (data) => {
@@ -334,8 +398,121 @@ export default function NoteEditor() {
     setIsRecording(false);
   }, []);
 
+  const resolveDictationLanguage = useCallback(() => {
+    if (currentNote?.language === "ur" || currentNote?.isRtl) {
+      return "ur-PK";
+    }
+    if (currentNote?.language === "en") {
+      return "en-US";
+    }
+    return "en-PK";
+  }, [currentNote?.isRtl, currentNote?.language]);
+
+  const insertDictationText = useCallback(
+    (transcript) => {
+      if (!editor || !transcript) return;
+
+      const normalizedText = transcript.replace(/\s+/g, " ").trim();
+      if (!normalizedText) return;
+
+      const { from } = editor.state.selection;
+      const charBefore =
+        from > 1 ? editor.state.doc.textBetween(from - 1, from, "") : "";
+      const needsLeadingSpace = Boolean(charBefore && !/\s/.test(charBefore));
+      const textToInsert = `${needsLeadingSpace ? " " : ""}${normalizedText} `;
+
+      editor.chain().focus().insertContent(textToInsert).run();
+    },
+    [editor],
+  );
+
+  const handleStartDictation = useCallback(() => {
+    if (isDictating) return;
+
+    if (!editor) {
+      toast.error("Editor is not ready yet.");
+      return;
+    }
+
+    if (isRecording) {
+      toast.error("Stop voice comment recording before starting note dictation.");
+      return;
+    }
+
+    const SpeechRecognitionConstructor = getSpeechRecognitionConstructor();
+
+    if (!SpeechRecognitionConstructor) {
+      toast.error("Voice typing is not supported in this browser.");
+      return;
+    }
+
+    const recognition = new SpeechRecognitionConstructor();
+    recognition.lang = resolveDictationLanguage();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      setIsDictating(true);
+    };
+
+    recognition.onresult = (event) => {
+      for (let index = event.resultIndex; index < event.results.length; index += 1) {
+        const result = event.results[index];
+        const transcript = result[0]?.transcript || "";
+        if (!transcript) continue;
+
+        if (result.isFinal) {
+          insertDictationText(transcript);
+        }
+      }
+    };
+
+    recognition.onerror = (event) => {
+      if (event.error === "aborted" || event.error === "no-speech") return;
+
+      if (["not-allowed", "service-not-allowed"].includes(event.error)) {
+        toast.error("Microphone permission is required for voice typing.");
+        return;
+      }
+
+      toast.error("Voice typing failed. Please try again.");
+    };
+
+    recognition.onend = () => {
+      recognitionRef.current = null;
+      setIsDictating(false);
+    };
+
+    recognitionRef.current = recognition;
+    setIsDictating(true);
+
+    try {
+      recognition.start();
+    } catch (error) {
+      recognitionRef.current = null;
+      setIsDictating(false);
+      toast.error("Unable to start voice typing.");
+    }
+  }, [
+    editor,
+    insertDictationText,
+    isDictating,
+    isRecording,
+    resolveDictationLanguage,
+  ]);
+
+  const handleStopDictation = useCallback(() => {
+    stopActiveDictation();
+  }, [stopActiveDictation]);
+
   const handleStartRecording = useCallback(async () => {
     if (isRecording) return;
+
+    if (isDictating) {
+      toast.error("Stop note dictation before recording a voice comment.");
+      return;
+    }
 
     if (
       !navigator.mediaDevices?.getUserMedia ||
@@ -382,7 +559,7 @@ export default function NoteEditor() {
     } catch (error) {
       toast.error("Unable to access microphone.");
     }
-  }, [audioPreviewUrl, isRecording, stopActiveRecording]);
+  }, [audioPreviewUrl, isDictating, isRecording, stopActiveRecording]);
 
   const handleStopRecording = useCallback(() => {
     if (!recorderRef.current || recorderRef.current.state === "inactive") {
@@ -440,14 +617,16 @@ export default function NoteEditor() {
   };
 
   const handleSave = useCallback(async () => {
-    if (!hasChanges) return;
+    if (!hasChanges) return true;
     setIsSaving(true);
     try {
       await updateNote(noteId, { title, content: editor?.getHTML() });
       setHasChanges(false);
       toast.success("Saved");
+      return true;
     } catch (error) {
       toast.error("Failed to save");
+      return false;
     } finally {
       setIsSaving(false);
     }
@@ -614,6 +793,46 @@ export default function NoteEditor() {
     );
   };
 
+  const handleBack = useCallback(async () => {
+    const saved = await handleSave();
+    if (!saved) return;
+    navigate(notesListPath);
+  }, [handleSave, navigate, notesListPath]);
+
+  const handleDeleteNote = useCallback(async () => {
+    try {
+      await deleteNote(noteId);
+      setDeleteNoteDialogOpen(false);
+      toast.success("Note deleted");
+      navigate(notesListPath);
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to delete note");
+    }
+  }, [deleteNote, navigate, noteId, notesListPath]);
+
+  const handleDownloadNote = useCallback(async () => {
+    try {
+      const noteContent = editor?.getHTML() || currentNote?.content || "";
+      const hasRtlContent = /[\u0591-\u07FF\uFB1D-\uFDFD\uFE70-\uFEFC]/.test(
+        noteContent.replace(/<[^>]*>/g, " "),
+      );
+
+      await downloadNoteAsPdf({
+        ...currentNote,
+        title: title.trim() || currentNote?.title || "Untitled Note",
+        content: noteContent,
+        isRtl:
+          typeof currentNote?.isRtl === "boolean"
+            ? currentNote.isRtl
+            : hasRtlContent,
+        updatedAt: hasChanges ? new Date().toISOString() : currentNote?.updatedAt,
+      });
+      toast.success("PDF downloaded");
+    } catch (error) {
+      toast.error("Failed to download note");
+    }
+  }, [currentNote, downloadNoteAsPdf, editor, hasChanges, title]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -627,10 +846,7 @@ export default function NoteEditor() {
       <div className="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center space-x-4">
           <button
-            onClick={() => {
-              if (hasChanges) handleSave();
-              navigate(-1);
-            }}
+            onClick={handleBack}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
           >
             <ArrowBackIcon />
@@ -790,6 +1006,31 @@ export default function NoteEditor() {
         <MenuButton onClick={handleImageUpload} title="Insert Image">
           <ImageIcon fontSize="small" />
         </MenuButton>
+        <MenuButton
+          onClick={isDictating ? handleStopDictation : handleStartDictation}
+          disabled={!speechRecognitionSupported || isRecording}
+          title={
+            !speechRecognitionSupported
+              ? "Voice typing is not supported in this browser"
+              : isRecording
+                ? "Stop comment recording to start voice typing"
+                : isDictating
+                  ? "Stop voice typing"
+                  : "Start voice typing"
+          }
+        >
+          {isDictating ? (
+            <StopIcon fontSize="small" />
+          ) : (
+            <MicIcon fontSize="small" />
+          )}
+        </MenuButton>
+        {isDictating && (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-300 text-[11px] whitespace-nowrap">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+            Listening
+          </span>
+        )}
         <div className="w-px h-6 bg-gray-200 mx-1" />
         <MenuButton
           onClick={() => editor?.chain().focus().undo().run()}
@@ -1009,7 +1250,58 @@ export default function NoteEditor() {
         >
           <QuizIcon fontSize="small" className="mr-2" /> Generate Quiz
         </MenuItem>
+        <MenuItem
+          onClick={() => {
+            handleDownloadNote();
+            setAnchorEl(null);
+          }}
+        >
+          <DownloadIcon fontSize="small" className="mr-2" /> Download Note
+          (.pdf)
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            setDeleteNoteDialogOpen(true);
+            setAnchorEl(null);
+          }}
+        >
+          <DeleteIcon fontSize="small" className="mr-2 text-red-500" />
+          Delete Note
+        </MenuItem>
       </Menu>
+
+      <Dialog
+        open={deleteNoteDialogOpen}
+        onClose={() => setDeleteNoteDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <div className="p-6 text-center">
+          <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+            <DeleteIcon className="text-red-600" fontSize="large" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2 dark:text-gray-100">
+            Delete Note?
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            This will delete &quot;{title || currentNote?.title || "Untitled Note"}&quot;.
+          </p>
+          <div className="flex justify-center space-x-3">
+            <button
+              onClick={() => setDeleteNoteDialogOpen(false)}
+              className="btn-secondary"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDeleteNote}
+              className="bg-red-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-red-700 transition-colors"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </Dialog>
 
       <Dialog
         open={shareModal}
