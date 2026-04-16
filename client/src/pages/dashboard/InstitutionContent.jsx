@@ -49,13 +49,13 @@ export default function InstitutionContent() {
     createSubject,
     fetchNoteForDownload,
     downloadNoteAsPdf,
-    isLoading,
   } = useNoteStore();
 
   const [selectedSemesterId, setSelectedSemesterId] = useState("");
   const [selectedSubjectId, setSelectedSubjectId] = useState("");
   const [search, setSearch] = useState("");
   const [isInitializing, setIsInitializing] = useState(true);
+  const [isNotesLoading, setIsNotesLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [newNoteTitle, setNewNoteTitle] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -156,12 +156,18 @@ export default function InstitutionContent() {
   useEffect(() => {
     const initialize = async () => {
       setIsInitializing(true);
+      setIsNotesLoading(true);
       try {
         if (institutions.length === 0) {
           await fetchInstitutions();
         }
 
-        const loadedSemesters = await fetchSemesters(institutionId);
+        const [loadedSemesters, loadedSubjects] = await Promise.all([
+          fetchSemesters(institutionId),
+          fetchSubjects({ institutionId }),
+          fetchNotes({ institutionId, limit: 1000 }),
+        ]);
+
         const semesterFromQuery = searchParams.get("semester");
         const firstSemester =
           loadedSemesters?.find(
@@ -179,16 +185,19 @@ export default function InstitutionContent() {
         const semesterId = firstSemester._id;
         setSelectedSemesterId(semesterId);
 
-        const loadedSubjects = await fetchSubjects(semesterId);
+        const subjectsForSemester = (loadedSubjects || []).filter(
+          (subject) =>
+            String(subject.semester?._id || subject.semester) ===
+            String(semesterId),
+        );
         const subjectFromQuery = searchParams.get("subject");
         const firstSubject =
-          loadedSubjects?.find(
+          subjectsForSemester.find(
             (subject) => String(subject._id) === String(subjectFromQuery),
-          ) || loadedSubjects?.[0];
+          ) || subjectsForSemester[0];
 
         if (firstSubject) {
           setSelectedSubjectId(firstSubject._id);
-          await fetchNotes({ subjectId: firstSubject._id });
           syncFiltersToUrl(semesterId, firstSubject._id);
         } else {
           setSelectedSubjectId("");
@@ -197,14 +206,15 @@ export default function InstitutionContent() {
       } catch (error) {
         toast.error("Failed to load institution content");
       } finally {
+        setIsNotesLoading(false);
         setIsInitializing(false);
       }
     };
 
     initialize();
-  }, [institutionId, searchParams]);
+  }, [institutionId]);
 
-  const handleSemesterChange = async (semesterId) => {
+  const handleSemesterChange = (semesterId) => {
     setSelectedSemesterId(semesterId);
     setSelectedSubjectId("");
 
@@ -213,24 +223,22 @@ export default function InstitutionContent() {
       return;
     }
 
-    try {
-      const loadedSubjects = await fetchSubjects(semesterId);
-      const firstSubject = loadedSubjects?.[0];
+    const subjectsForSemester = subjects.filter(
+      (subject) =>
+        String(subject.semester?._id || subject.semester) === String(semesterId),
+    );
+    const firstSubject = subjectsForSemester[0];
 
-      if (firstSubject) {
-        setSelectedSubjectId(firstSubject._id);
-        await fetchNotes({ subjectId: firstSubject._id });
-        syncFiltersToUrl(semesterId, firstSubject._id);
-      } else {
-        setSelectedSubjectId("");
-        syncFiltersToUrl(semesterId, "");
-      }
-    } catch (error) {
-      toast.error("Failed to load subjects");
+    if (firstSubject) {
+      setSelectedSubjectId(firstSubject._id);
+      syncFiltersToUrl(semesterId, firstSubject._id);
+    } else {
+      setSelectedSubjectId("");
+      syncFiltersToUrl(semesterId, "");
     }
   };
 
-  const handleSubjectChange = async (subjectId) => {
+  const handleSubjectChange = (subjectId) => {
     setSelectedSubjectId(subjectId);
 
     if (!subjectId) {
@@ -238,12 +246,7 @@ export default function InstitutionContent() {
       return;
     }
 
-    try {
-      await fetchNotes({ subjectId });
-      syncFiltersToUrl(selectedSemesterId, subjectId);
-    } catch (error) {
-      toast.error("Failed to load notes");
-    }
+    syncFiltersToUrl(selectedSemesterId, subjectId);
   };
 
   const handleCreateNote = async (e) => {
@@ -313,17 +316,9 @@ export default function InstitutionContent() {
         ...semesterForm,
         institutionId,
       });
-      await fetchSemesters(institutionId);
       setSelectedSemesterId(createdSemester._id);
-
-      const loadedSubjects = await fetchSubjects(createdSemester._id);
-      const firstSubject = loadedSubjects?.[0];
-      if (firstSubject) {
-        setSelectedSubjectId(firstSubject._id);
-        await fetchNotes({ subjectId: firstSubject._id });
-      } else {
-        setSelectedSubjectId("");
-      }
+      setSelectedSubjectId("");
+      syncFiltersToUrl(createdSemester._id, "");
 
       setSemesterModalOpen(false);
       setSemesterForm({ name: "", type: "semester", description: "" });
@@ -346,9 +341,8 @@ export default function InstitutionContent() {
         ...subjectForm,
         semesterId: selectedSemesterId,
       });
-      await fetchSubjects(selectedSemesterId);
       setSelectedSubjectId(createdSubject._id);
-      await fetchNotes({ subjectId: createdSubject._id });
+      syncFiltersToUrl(selectedSemesterId, createdSubject._id);
 
       setSubjectModalOpen(false);
       setSubjectForm({ name: "", code: "", description: "", instructor: "" });
@@ -465,7 +459,7 @@ export default function InstitutionContent() {
         </div>
       </motion.div>
 
-      {isLoading ? (
+      {isNotesLoading ? (
         <div className="flex items-center justify-center h-56">
           <div className="spinner" />
         </div>

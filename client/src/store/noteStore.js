@@ -19,73 +19,74 @@ const sanitizeFileName = (value = "note") => {
   return sanitized || "note";
 };
 
-const buildNoteHtmlDocument = (note = {}) => {
+const buildNoteHtmlFragment = (note = {}) => {
   const title =
     typeof note.title === "string" && note.title.trim()
       ? note.title.trim()
       : "Untitled Note";
   const content = typeof note.content === "string" ? note.content : "";
   const isRtl = Boolean(note.isRtl) || note.language === "ur";
-  const language = note.language === "ur" ? "ur" : "en";
   const updatedAt = note.updatedAt
     ? new Date(note.updatedAt).toLocaleString()
     : null;
 
-  return `<!doctype html>
-<html lang="${language}" dir="${isRtl ? "rtl" : "ltr"}">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>${escapeHtml(title)}</title>
+  return `<div class="note-export-root" dir="${isRtl ? "rtl" : "ltr"}">
     <style>
-      :root {
-        color-scheme: light;
+      .note-export-root,
+      .note-export-root * {
+        box-sizing: border-box;
       }
 
-      body {
-        margin: 0;
+      .note-export-root {
+        width: 794px;
         padding: 28px;
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        line-height: 1.6;
+        line-height: 1.65;
         color: #111827;
         background: #ffffff;
       }
 
-      main {
+      .note-export-root main {
         max-width: 960px;
         margin: 0 auto;
+        padding-bottom: 8px;
       }
 
-      h1 {
+      .note-export-root h1 {
         margin: 0;
         font-size: 1.65rem;
         line-height: 1.3;
       }
 
-      .meta {
+      .note-export-root .meta {
         margin-top: 6px;
         margin-bottom: 22px;
         font-size: 0.82rem;
         color: #6b7280;
       }
 
-      img {
+      .note-export-root p,
+      .note-export-root li {
+        line-height: 1.65;
+      }
+
+      .note-export-root img {
         max-width: 100%;
         height: auto;
       }
 
-      pre {
+      .note-export-root pre {
         background: #f3f4f6;
         border-radius: 10px;
         padding: 12px;
         overflow-x: auto;
       }
 
-      code {
+      .note-export-root code {
         font-family: "Consolas", "Courier New", monospace;
       }
 
-      blockquote {
+      .note-export-root blockquote {
         margin: 16px 0;
         padding: 8px 14px;
         border-left: 4px solid #d1d5db;
@@ -93,26 +94,33 @@ const buildNoteHtmlDocument = (note = {}) => {
         background: #f9fafb;
       }
 
-      table {
+      .note-export-root table {
         width: 100%;
         border-collapse: collapse;
       }
 
-      th,
-      td {
+      .note-export-root th,
+      .note-export-root td {
         border: 1px solid #e5e7eb;
         padding: 8px;
       }
+
+      .note-export-root p,
+      .note-export-root li,
+      .note-export-root blockquote,
+      .note-export-root pre,
+      .note-export-root table,
+      .note-export-root img {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
     </style>
-  </head>
-  <body>
     <main>
       <h1>${escapeHtml(title)}</h1>
       ${updatedAt ? `<p class="meta">Updated: ${escapeHtml(updatedAt)}</p>` : ""}
       <article>${content}</article>
     </main>
-  </body>
-</html>`;
+  </div>`;
 };
 
 const useNoteStore = create((set, get) => ({
@@ -202,10 +210,15 @@ const useNoteStore = create((set, get) => ({
     }));
   },
 
-  fetchSubjects: async (semesterId) => {
+  fetchSubjects: async (filters = {}) => {
     set({ isLoading: true });
     try {
-      const params = semesterId ? { semesterId } : {};
+      const params =
+        typeof filters === "string"
+          ? { semesterId: filters }
+          : filters && typeof filters === "object"
+            ? filters
+            : {};
       const response = await api.get("/subjects", { params });
       set({ subjects: response.data.data.subjects, isLoading: false });
       return response.data.data.subjects;
@@ -420,30 +433,46 @@ const useNoteStore = create((set, get) => ({
       typeof note?.title === "string" && note.title.trim()
         ? note.title.trim()
         : "Untitled Note";
-    const htmlDocument = buildNoteHtmlDocument({ ...note, title });
+    const htmlDocument = buildNoteHtmlFragment({ ...note, title });
     const container = document.createElement("div");
     container.innerHTML = htmlDocument;
     container.style.position = "fixed";
-    container.style.left = "-100000px";
+    container.style.left = "-99999px";
     container.style.top = "0";
-    container.style.width = "794px";
+    container.style.width = "0";
+    container.style.height = "0";
+    container.style.overflow = "hidden";
+    container.style.opacity = "0";
+    container.style.pointerEvents = "none";
     container.style.background = "#ffffff";
+    container.setAttribute("aria-hidden", "true");
 
     document.body.appendChild(container);
 
     try {
       const html2pdfModule = await import("html2pdf.js");
       const html2pdf = html2pdfModule.default || html2pdfModule;
-      const contentRoot = container.querySelector("main") || container;
+      const contentRoot = container.firstElementChild || container;
 
       await html2pdf()
         .set({
-          margin: 10,
+          margin: [10, 10, 12, 10],
           filename: `${sanitizeFileName(title)}.pdf`,
           image: { type: "jpeg", quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true },
+          html2canvas: {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: "#ffffff",
+            logging: false,
+            removeContainer: true,
+            scrollX: 0,
+            scrollY: 0,
+          },
           jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-          pagebreak: { mode: ["css", "legacy"] },
+          pagebreak: {
+            mode: ["css", "legacy"],
+            avoid: ["p", "li", "blockquote", "pre", "table", "tr", "img"],
+          },
         })
         .from(contentRoot)
         .save();
