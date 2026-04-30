@@ -102,10 +102,10 @@ export default function Institutions() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          <h1 className="text-2xl font-bold text-white">
             Institutions
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-gray-400">
             Manage your schools, colleges, and universities
           </p>
         </div>
@@ -148,7 +148,7 @@ export default function Institutions() {
                     >
                       <EditIcon
                         fontSize="small"
-                        className="text-gray-500 dark:text-gray-400"
+                        className="text-gray-400"
                       />
                     </button>
                     <button
@@ -161,18 +161,18 @@ export default function Institutions() {
                   </div>
                 </div>
                 <Link to={`/institutions/${inst._id}/content`}>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 hover:text-primary-600 transition-colors">
+                  <h3 className="text-lg font-semibold text-white hover:text-primary-600 transition-colors">
                     {inst.name}
                   </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 capitalize mb-2">
+                  <p className="text-sm text-gray-400 capitalize mb-2">
                     {inst.type}
                   </p>
                   {inst.description && (
-                    <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
+                    <p className="text-sm text-gray-400 line-clamp-2">
                       {inst.description}
                     </p>
                   )}
-                  <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                  <div className="mt-4 pt-4 border-t border-white/[0.06] flex items-center justify-between text-sm text-gray-400">
                     <span>{inst.semesterCount || 0} Semesters</span>
                     <span className="text-primary-600">Open →</span>
                   </div>
@@ -184,10 +184,10 @@ export default function Institutions() {
       ) : (
         <div className="card text-center py-16">
           <SchoolIcon className="text-gray-300 mb-4" style={{ fontSize: 64 }} />
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+          <h3 className="text-xl font-semibold text-white mb-2">
             No Institutions Yet
           </h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
+          <p className="text-gray-400 mb-6">
             Add your first institution to get started organizing your notes
           </p>
           <button

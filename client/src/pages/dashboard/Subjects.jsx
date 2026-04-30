@@ -189,7 +189,7 @@ export default function Subjects() {
                     semester?.institution?._id || semester?.institution
                   }/content?semester=${semesterId}&subject=${sub._id}`}
                 >
-                  <h3 className="text-lg font-semibold text-gray-900 hover:text-primary-600 transition-colors">
+                  <h3 className="text-lg font-semibold text-white hover:text-primary-400 transition-colors">
                     {sub.name}
                   </h3>
                   {sub.code && (

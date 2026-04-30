@@ -64,8 +64,8 @@ export default function ResetPassword() {
           <div className="w-16 h-16 rounded-2xl gradient-bg flex items-center justify-center mx-auto mb-4">
             <span className="text-white font-bold text-3xl">V</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Reset Password</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-3xl font-bold text-white">Reset Password</h1>
+          <p className="text-gray-400 mt-2">
             Create a new password for your account
           </p>
         </div>
@@ -73,13 +73,13 @@ export default function ResetPassword() {
         <div className="card">
           {success ? (
             <div className="text-center py-6">
-              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
-                <CheckCircleIcon className="text-green-600" fontSize="large" />
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: "rgba(34,197,94,0.15)" }}>
+                <CheckCircleIcon style={{ color: "#4ade80" }} fontSize="large" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              <h2 className="text-xl font-semibold text-white mb-2">
                 Password Reset Complete
               </h2>
-              <p className="text-gray-600 mb-6">
+              <p className="text-gray-400 mb-6">
                 Your password has been successfully reset. You can now sign in
                 with your new password.
               </p>
@@ -90,12 +90,12 @@ export default function ResetPassword() {
           ) : (
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   New Password
                 </label>
                 <div className="relative">
                   <LockIcon
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
                     fontSize="small"
                   />
                   <input
@@ -104,7 +104,7 @@ export default function ResetPassword() {
                     onChange={(e) =>
                       setFormData({ ...formData, password: e.target.value })
                     }
-                    className="input-field pl-10 pr-10"
+                    className="input-glow pl-10 pr-10"
                     placeholder="••••••••"
                     required
                     minLength={8}
@@ -112,7 +112,7 @@ export default function ResetPassword() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
                   >
                     {showPassword ? (
                       <VisibilityOffIcon fontSize="small" />
@@ -127,7 +127,7 @@ export default function ResetPassword() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Confirm New Password
                 </label>
                 <div className="relative">
@@ -144,7 +144,7 @@ export default function ResetPassword() {
                         confirmPassword: e.target.value,
                       })
                     }
-                    className="input-field pl-10"
+                    className="input-glow pl-10"
                     placeholder="••••••••"
                     required
                   />

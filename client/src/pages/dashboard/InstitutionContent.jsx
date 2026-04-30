@@ -371,10 +371,10 @@ export default function InstitutionContent() {
             <ArrowBackIcon />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <h1 className="text-2xl font-bold text-white">
               {institution?.name || "Institution"}
             </h1>
-            <p className="text-gray-600 dark:text-gray-400">
+            <p className="text-gray-400">
               Pick a semester and subject to jump to notes quickly.
             </p>
           </div>
@@ -410,7 +410,7 @@ export default function InstitutionContent() {
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Semester
             </label>
             <select
@@ -428,7 +428,7 @@ export default function InstitutionContent() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Subject
             </label>
             <select
@@ -489,10 +489,10 @@ export default function InstitutionContent() {
                 >
                   <NoteIcon className="text-white" fontSize="small" />
                 </div>
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100 line-clamp-2 mb-2">
+                <h3 className="font-semibold text-white line-clamp-2 mb-2">
                   {note.title}
                 </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-gray-400">
                   {note.subject?.name}
                 </p>
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
@@ -507,7 +507,7 @@ export default function InstitutionContent() {
                   className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Download note"
                 >
-                  <DownloadIcon fontSize="small" className="text-gray-500 dark:text-gray-400" />
+                  <DownloadIcon fontSize="small" className="text-gray-400" />
                 </button>
                 <Link
                   to={`/notes/${note._id}`}
@@ -515,7 +515,7 @@ export default function InstitutionContent() {
                   className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
                   title="Open note"
                 >
-                  <EditIcon fontSize="small" className="text-gray-500 dark:text-gray-400" />
+                  <EditIcon fontSize="small" className="text-gray-400" />
                 </Link>
                 <button
                   type="button"
@@ -536,13 +536,13 @@ export default function InstitutionContent() {
       ) : (
         <div className="card text-center py-14">
           <NoteIcon
-            className="text-gray-300 dark:text-gray-600 mb-4"
+            className="text-gray-600 mb-4"
             style={{ fontSize: 56 }}
           />
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+          <h3 className="text-xl font-semibold text-white mb-2">
             No notes found
           </h3>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-gray-400">
             {selectedSubjectId
               ? "Create your first note for this subject."
               : "Select a subject to view notes."}
@@ -560,10 +560,10 @@ export default function InstitutionContent() {
           <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
             <DeleteIcon className="text-red-600" fontSize="large" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+          <h3 className="text-lg font-semibold text-white mb-2">
             Delete Note?
           </h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
+          <p className="text-gray-400 mb-6">
             &quot;{deleteConfirm?.title}&quot; will be moved to archive.
           </p>
           <div className="flex justify-center gap-3">
@@ -643,7 +643,7 @@ export default function InstitutionContent() {
 
           <form onSubmit={handleCreateSemester} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Name
               </label>
               <input
@@ -659,7 +659,7 @@ export default function InstitutionContent() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Type
               </label>
               <select
@@ -678,7 +678,7 @@ export default function InstitutionContent() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Description (Optional)
               </label>
               <textarea
@@ -729,7 +729,7 @@ export default function InstitutionContent() {
 
           <form onSubmit={handleCreateSubject} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Subject Name
               </label>
               <input
@@ -746,7 +746,7 @@ export default function InstitutionContent() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Code (Optional)
                 </label>
                 <input
@@ -763,7 +763,7 @@ export default function InstitutionContent() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Instructor (Optional)
                 </label>
                 <input
@@ -782,7 +782,7 @@ export default function InstitutionContent() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Description (Optional)
               </label>
               <textarea

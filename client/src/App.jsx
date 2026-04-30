@@ -30,6 +30,8 @@ import SharedNotes from "./pages/dashboard/SharedNotes";
 import Profile from "./pages/dashboard/Profile";
 import Notifications from "./pages/dashboard/Notifications";
 
+import ParticleBackground from "./components/ui/ParticleBackground";
+
 function App() {
   const { isAuthenticated, accessToken, getMe } = useAuthStore();
   const { connect, disconnect } = useSocketStore();
@@ -57,8 +59,11 @@ function App() {
   }, [isAuthenticated, accessToken]);
 
   return (
-    <Routes>
-      <Route element={<PublicLayout />}>
+    <>
+      <ParticleBackground />
+      <div className="relative z-10">
+        <Routes>
+        <Route element={<PublicLayout />}>
         <Route path="/" element={<Home />} />
         <Route path="/services" element={<Services />} />
         <Route path="/about" element={<About />} />
@@ -108,6 +113,8 @@ function App() {
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+      </div>
+    </>
   );
 }
 

@@ -107,16 +107,16 @@ export default function Profile() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+        <h1 className="text-2xl font-bold text-white">
           Account Settings
         </h1>
-        <p className="text-gray-600 dark:text-gray-400">
+        <p className="text-gray-400">
           Manage your profile and preferences
         </p>
       </div>
 
       <div className="card">
-        <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6 pb-6 border-b border-gray-100 dark:border-gray-700">
+        <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6 pb-6 border-b border-white/[0.06]">
           <div className="relative">
             <Avatar
               src={user?.profilePicture?.url}
@@ -136,17 +136,17 @@ export default function Profile() {
             </label>
           </div>
           <div className="text-center sm:text-left">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+            <h2 className="text-xl font-semibold text-white">
               {user?.name}
             </h2>
-            <p className="text-gray-600 dark:text-gray-400">{user?.email}</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 capitalize mt-1">
+            <p className="text-gray-400">{user?.email}</p>
+            <p className="text-sm text-gray-400 capitalize mt-1">
               {user?.role} Account
             </p>
           </div>
         </div>
 
-        <div className="flex border-b border-gray-100 dark:border-gray-700 mt-4">
+        <div className="flex border-b border-white/[0.06] mt-4">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
@@ -156,7 +156,7 @@ export default function Profile() {
                 className={`flex items-center space-x-2 px-4 py-3 border-b-2 transition-colors ${
                   activeTab === tab.id
                     ? "border-primary-600 text-primary-600"
-                    : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                    : "border-transparent text-gray-400 hover:text-white"
                 }`}
               >
                 <Icon fontSize="small" />
@@ -170,7 +170,7 @@ export default function Profile() {
           {activeTab === "profile" && (
             <form onSubmit={handleProfileUpdate} className="space-y-4 max-w-md">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Full Name
                 </label>
                 <input
@@ -184,7 +184,7 @@ export default function Profile() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Email
                 </label>
                 <div className="relative">
@@ -196,10 +196,10 @@ export default function Profile() {
                     type="email"
                     value={user?.email}
                     disabled
-                    className="input-field pl-10 bg-gray-50 dark:bg-gray-800"
+                    className="input-field pl-10 bg-dark-surface"
                   />
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                <p className="text-xs text-gray-400 mt-1">
                   Contact support to change your email
                 </p>
               </div>
@@ -219,7 +219,7 @@ export default function Profile() {
               className="space-y-4 max-w-md"
             >
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Current Password
                 </label>
                 <input
@@ -236,7 +236,7 @@ export default function Profile() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   New Password
                 </label>
                 <input
@@ -252,12 +252,12 @@ export default function Profile() {
                   required
                   minLength={8}
                 />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                <p className="text-xs text-gray-400 mt-1">
                   Must include uppercase, lowercase, and a number (8+ chars)
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Confirm New Password
                 </label>
                 <input
@@ -289,7 +289,7 @@ export default function Profile() {
               className="space-y-6 max-w-md"
             >
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Language
                 </label>
                 <select
@@ -304,7 +304,7 @@ export default function Profile() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Theme
                 </label>
                 <select
@@ -320,7 +320,7 @@ export default function Profile() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                <label className="block text-sm font-medium text-gray-300 mb-3">
                   Notifications
                 </label>
                 <div className="space-y-3">
@@ -335,9 +335,9 @@ export default function Profile() {
                   ].map((item) => (
                     <label
                       key={item.key}
-                      className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                      className="flex items-center justify-between p-3 bg-dark-surface rounded-lg"
                     >
-                      <span className="text-sm text-gray-700 dark:text-gray-300">
+                      <span className="text-sm text-gray-300">
                         {item.label}
                       </span>
                       <input

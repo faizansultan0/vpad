@@ -169,21 +169,21 @@ export default function VerifyEmail() {
         >
           <div className="card">
             <div className="text-center mb-6">
-              <div className="w-16 h-16 rounded-full bg-primary-50 flex items-center justify-center mx-auto mb-4">
-                <MarkEmailReadIcon className="text-primary-600" fontSize="large" />
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: "rgba(139, 92, 246, 0.15)" }}>
+                <MarkEmailReadIcon className="text-primary-400" fontSize="large" />
               </div>
-              <h1 className="text-2xl font-semibold text-gray-900">
+              <h1 className="text-2xl font-semibold text-white">
                 Verify Your Email
               </h1>
-              <p className="text-gray-600 mt-2">
+              <p className="text-gray-400 mt-2">
                 Enter the {OTP_LENGTH}-digit code sent to
               </p>
-              <p className="font-medium text-gray-900 break-all">{email || "-"}</p>
+              <p className="font-medium text-white break-all">{email || "-"}</p>
             </div>
 
             {!email ? (
               <div className="text-center">
-                <p className="text-red-600 mb-4">
+                <p className="text-red-400 mb-4">
                   Missing signup details. Please start registration again.
                 </p>
                 <Link to="/register" className="btn-primary inline-block">
@@ -193,7 +193,7 @@ export default function VerifyEmail() {
             ) : (
               <form onSubmit={handleOtpSubmit} className="space-y-5">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
                     Verification Code
                   </label>
                   <input
@@ -207,7 +207,7 @@ export default function VerifyEmail() {
                       setOtp(value);
                       if (error) setError("");
                     }}
-                    className="input-field text-center tracking-[0.6em] font-semibold text-lg"
+                    className="input-glow text-center tracking-[0.6em] font-semibold text-lg"
                     placeholder={"0".repeat(OTP_LENGTH)}
                     required
                   />
@@ -219,7 +219,7 @@ export default function VerifyEmail() {
                 </div>
 
                 {error && (
-                  <div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                  <div className="text-sm text-red-400 px-3 py-2 rounded-lg" style={{ background: "rgba(239,68,68,0.1)" }}>
                     {error}
                   </div>
                 )}
@@ -246,7 +246,7 @@ export default function VerifyEmail() {
                 </button>
 
                 <div className="text-center text-sm text-gray-500">
-                  Wrong email? <Link to="/register" className="text-primary-600">Register again</Link>
+                  Wrong email? <Link to="/register" className="text-primary-400">Register again</Link>
                 </div>
               </form>
             )}
@@ -267,10 +267,10 @@ export default function VerifyEmail() {
           {status === "verifying" && (
             <>
               <div className="spinner w-12 h-12 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              <h2 className="text-xl font-semibold text-white mb-2">
                 Verifying Email
               </h2>
-              <p className="text-gray-600">
+              <p className="text-gray-400">
                 Please wait while we verify your email address...
               </p>
             </>
@@ -278,13 +278,13 @@ export default function VerifyEmail() {
 
           {status === "success" && (
             <>
-              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
-                <CheckCircleIcon className="text-green-600" fontSize="large" />
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: "rgba(34,197,94,0.15)" }}>
+                <CheckCircleIcon style={{ color: "#4ade80" }} fontSize="large" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              <h2 className="text-xl font-semibold text-white mb-2">
                 Email Verified!
               </h2>
-              <p className="text-gray-600 mb-6">
+              <p className="text-gray-400 mb-6">
                 Your email has been successfully verified. You can now access
                 all features of VPad.
               </p>
@@ -296,13 +296,13 @@ export default function VerifyEmail() {
 
           {status === "error" && (
             <>
-              <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
-                <ErrorIcon className="text-red-600" fontSize="large" />
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: "rgba(239,68,68,0.15)" }}>
+                <ErrorIcon style={{ color: "#f87171" }} fontSize="large" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              <h2 className="text-xl font-semibold text-white mb-2">
                 Verification Failed
               </h2>
-              <p className="text-gray-600 mb-6">{error}</p>
+              <p className="text-gray-400 mb-6">{error}</p>
               <div className="space-x-4">
                 <Link to="/login" className="btn-primary inline-block">
                   Sign In

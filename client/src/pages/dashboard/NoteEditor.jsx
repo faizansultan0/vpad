@@ -52,7 +52,7 @@ const MenuButton = ({ onClick, active, disabled, children, title }) => (
     className={`p-2 rounded-lg transition-colors ${
       active
         ? "bg-primary-100 dark:bg-primary-600/20 text-primary-600 dark:text-primary-300"
-        : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300"
+        : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400"
     } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
   >
     {children}
@@ -132,7 +132,7 @@ const renderFormattedSummary = (summaryText) => {
       blocks.push(
         <HeadingTag
           key={`h-${keyCounter++}`}
-          className="text-base font-semibold text-gray-900 dark:text-gray-100"
+          className="text-base font-semibold text-white"
         >
           {renderInlineMarkdown(headingText)}
         </HeadingTag>,
@@ -843,7 +843,7 @@ export default function NoteEditor() {
 
   return (
     <div className="h-[calc(100vh-120px)] flex flex-col">
-      <div className="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex items-center justify-between pb-4 border-b border-white/[0.06]">
         <div className="flex items-center space-x-4">
           <button
             onClick={handleBack}
@@ -858,7 +858,7 @@ export default function NoteEditor() {
               setTitle(e.target.value);
               setHasChanges(true);
             }}
-            className="text-xl font-semibold text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none focus:ring-0 w-full max-w-md"
+            className="text-xl font-semibold text-white bg-transparent border-none outline-none focus:ring-0 w-full max-w-md"
             placeholder="Note title"
           />
         </div>
@@ -901,7 +901,7 @@ export default function NoteEditor() {
         </div>
       </div>
 
-      <div className="flex items-center space-x-1 py-2 border-b border-gray-100 dark:border-gray-700 overflow-x-auto">
+      <div className="flex items-center space-x-1 py-2 border-b border-white/[0.06] overflow-x-auto">
         <MenuButton
           onClick={() => editor?.chain().focus().toggleBold().run()}
           active={editor?.isActive("bold")}
@@ -1026,7 +1026,7 @@ export default function NoteEditor() {
           )}
         </MenuButton>
         {isDictating && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-300 text-[11px] whitespace-nowrap">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-900/20 text-red-600 dark:text-red-300 text-[11px] whitespace-nowrap">
             <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
             Listening
           </span>
@@ -1048,17 +1048,17 @@ export default function NoteEditor() {
         </MenuButton>
       </div>
 
-      <div className="flex-1 overflow-auto bg-white dark:bg-gray-900 rounded-xl mt-4 border border-gray-100 dark:border-gray-700">
+      <div className="flex-1 overflow-auto bg-dark-card rounded-xl mt-4 border border-white/[0.06]">
         <EditorContent editor={editor} className="prose max-w-none h-full" />
       </div>
 
-      <div className="mt-4 border border-gray-100 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-900 p-4 overflow-auto max-h-[40vh]">
+      <div className="mt-4 border border-white/[0.06] rounded-xl bg-dark-card p-4 overflow-auto max-h-[40vh]">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          <h3 className="text-lg font-semibold text-white">
             Comments
           </h3>
           {!canComment && (
-            <span className="text-xs text-gray-500 dark:text-gray-400">
+            <span className="text-xs text-gray-400">
               View-only collaborators cannot add comments
             </span>
           )}
@@ -1105,7 +1105,7 @@ export default function NoteEditor() {
                 <button
                   type="button"
                   onClick={clearRecordedAudio}
-                  className="text-sm px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  className="text-sm px-3 py-2 rounded-lg bg-dark-surface hover:bg-gray-200 hover:bg-dark-hover transition-colors"
                 >
                   Remove Audio
                 </button>
@@ -1125,14 +1125,14 @@ export default function NoteEditor() {
 
         <div className="space-y-3">
           {comments.length === 0 ? (
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-sm text-gray-400">
               No comments yet.
             </p>
           ) : (
             comments.map((comment) => (
               <div
                 key={comment._id}
-                className="rounded-xl border border-gray-100 dark:border-gray-700 p-3 bg-gray-50 dark:bg-gray-800/50"
+                className="rounded-xl border border-white/[0.06] p-3 bg-dark-surface/50"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-2">
@@ -1143,11 +1143,11 @@ export default function NoteEditor() {
                       {comment.user?.name?.charAt(0)}
                     </Avatar>
                     <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      <p className="text-sm font-medium text-white">
                         {comment.user?.name || "User"}
                       </p>
                       {comment.content && (
-                        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                        <p className="text-sm text-gray-300 whitespace-pre-wrap">
                           {comment.content}
                         </p>
                       )}
@@ -1184,12 +1184,12 @@ export default function NoteEditor() {
                       {comment.replies.map((reply) => (
                         <div
                           key={reply._id}
-                          className="rounded-lg bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700 p-2"
+                          className="rounded-lg bg-dark-card border border-white/[0.06] p-2"
                         >
-                          <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                          <p className="text-xs font-semibold text-gray-300">
                             {reply.user?.name || "User"}
                           </p>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
+                          <p className="text-sm text-gray-400 whitespace-pre-wrap">
                             {reply.content}
                           </p>
                           {reply.audio?.url && (
@@ -1280,10 +1280,10 @@ export default function NoteEditor() {
           <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
             <DeleteIcon className="text-red-600" fontSize="large" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2 dark:text-gray-100">
+          <h3 className="text-lg font-semibold text-white mb-2">
             Delete Note?
           </h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
+          <p className="text-gray-400 mb-6">
             This will delete &quot;{title || currentNote?.title || "Untitled Note"}&quot;.
           </p>
           <div className="flex justify-center space-x-3">
@@ -1321,7 +1321,7 @@ export default function NoteEditor() {
           </div>
           <form onSubmit={handleShare} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Email Address
               </label>
               <input
@@ -1334,7 +1334,7 @@ export default function NoteEditor() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Permission
               </label>
               <select
@@ -1348,14 +1348,14 @@ export default function NoteEditor() {
             </div>
             {currentNote?.collaborators?.length > 0 && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Current Collaborators
                 </label>
                 <div className="space-y-2">
                   {currentNote.collaborators.map((c) => (
                     <div
                       key={c._id}
-                      className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                      className="flex items-center justify-between p-2 bg-dark-surface rounded-lg"
                     >
                       <div className="flex items-center space-x-2">
                         <Avatar
@@ -1366,7 +1366,7 @@ export default function NoteEditor() {
                         </Avatar>
                         <span className="text-sm">{c.user?.email}</span>
                       </div>
-                      <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+                      <span className="text-xs text-gray-400 capitalize">
                         {c.permission}
                       </span>
                     </div>
@@ -1424,11 +1424,11 @@ export default function NoteEditor() {
             </div>
           )}
           {aiLoading ? (
-            <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl max-h-[70vh] overflow-auto min-h-[240px] flex items-center justify-center">
+            <div className="bg-dark-surface p-4 rounded-xl max-h-[70vh] overflow-auto min-h-[240px] flex items-center justify-center">
               <div className="spinner" />
             </div>
           ) : (
-            <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl max-h-[70vh] overflow-auto">
+            <div className="bg-dark-surface p-4 rounded-xl max-h-[70vh] overflow-auto">
               {renderFormattedSummary(summary)}
             </div>
           )}
@@ -1469,9 +1469,9 @@ export default function NoteEditor() {
           {quiz?.questions?.map((q, i) => (
             <div
               key={i}
-              className="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl"
+              className="mb-6 p-4 bg-dark-surface rounded-xl"
             >
-              <p className="font-medium text-gray-900 dark:text-gray-100 mb-3">
+              <p className="font-medium text-white mb-3">
                 {i + 1}. {q.question}
               </p>
               <div className="space-y-2">
@@ -1486,10 +1486,10 @@ export default function NoteEditor() {
                           ? "border-green-500 bg-green-50"
                           : selectedAnswers[i] === j
                             ? "border-red-500 bg-red-50"
-                            : "border-gray-200 dark:border-gray-700"
+                            : "border-white/[0.06]"
                         : selectedAnswers[i] === j
                           ? "border-primary-500 bg-primary-50 dark:bg-primary-600/20"
-                          : "border-gray-200 dark:border-gray-700 hover:border-primary-300"
+                          : "border-white/[0.06] hover:border-primary-300"
                     }`}
                   >
                     {String.fromCharCode(65 + j)}. {opt}
@@ -1497,7 +1497,7 @@ export default function NoteEditor() {
                 ))}
               </div>
               {quizSubmitted && q.explanation && (
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                <p className="text-sm text-gray-400 mt-2">
                   💡 {q.explanation}
                 </p>
               )}
