@@ -146,7 +146,7 @@ export default function Profile() {
           </div>
         </div>
 
-        <div className="flex border-b border-white/[0.06] mt-4">
+        <div className="flex flex-wrap border-b border-white/[0.06] mt-4 gap-y-2">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (

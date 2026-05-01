@@ -38,15 +38,18 @@
   }
 
   .card {
-    @apply rounded-2xl p-6 transition-shadow duration-200;
-    background: rgba(22, 14, 48, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    @apply rounded-2xl p-6 transition-all duration-300;
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.15);
   }
 
   .card:hover {
-    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.08);
+    box-shadow: 0 12px 40px rgba(139, 92, 246, 0.15);
+    border-color: rgba(139, 92, 246, 0.3);
+    background: rgba(255, 255, 255, 0.06);
   }
 
   .input-field {
@@ -63,6 +66,30 @@
 
   .input-field::placeholder {
     color: #64748b;
+  }
+
+  /* ── Themed Select Dropdowns ── */
+  select.input-field {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238b5cf6' viewBox='0 0 16 16'%3E%3Cpath d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 12px;
+    padding-right: 36px;
+    cursor: pointer;
+  }
+
+  select.input-field option {
+    background: #160e35;
+    color: #f1f5f9;
+    padding: 8px;
+  }
+
+  select.input-field:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   .glass {
@@ -410,6 +437,15 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(139, 92, 246, 0.5);
+}
+
+/* ── Hide scrollbar but keep scroll functionality ── */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
 
 /* ═══════════════════════════════════════════════

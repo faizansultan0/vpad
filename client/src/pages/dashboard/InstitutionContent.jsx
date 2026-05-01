@@ -47,6 +47,8 @@ export default function InstitutionContent() {
     deleteNote,
     createSemester,
     createSubject,
+    updateSemester,
+    updateSubject,
     fetchNoteForDownload,
     downloadNoteAsPdf,
   } = useNoteStore();
@@ -68,6 +70,19 @@ export default function InstitutionContent() {
     description: "",
   });
   const [subjectForm, setSubjectForm] = useState({
+    name: "",
+    code: "",
+    description: "",
+    instructor: "",
+  });
+  const [editSemesterModalOpen, setEditSemesterModalOpen] = useState(false);
+  const [editSubjectModalOpen, setEditSubjectModalOpen] = useState(false);
+  const [editSemesterForm, setEditSemesterForm] = useState({
+    name: "",
+    type: "semester",
+    description: "",
+  });
+  const [editSubjectForm, setEditSubjectForm] = useState({
     name: "",
     code: "",
     description: "",
@@ -352,6 +367,53 @@ export default function InstitutionContent() {
     }
   };
 
+  const openEditSemesterModal = () => {
+    const sem = institutionSemesters.find((s) => String(s._id) === String(selectedSemesterId));
+    if (sem) {
+      setEditSemesterForm({
+        name: sem.name,
+        type: sem.type || "semester",
+        description: sem.description || "",
+      });
+      setEditSemesterModalOpen(true);
+    }
+  };
+
+  const openEditSubjectModal = () => {
+    const sub = semesterSubjects.find((s) => String(s._id) === String(selectedSubjectId));
+    if (sub) {
+      setEditSubjectForm({
+        name: sub.name,
+        code: sub.code || "",
+        description: sub.description || "",
+        instructor: sub.instructor || "",
+      });
+      setEditSubjectModalOpen(true);
+    }
+  };
+
+  const handleUpdateSemester = async (e) => {
+    e.preventDefault();
+    try {
+      await updateSemester(selectedSemesterId, editSemesterForm);
+      setEditSemesterModalOpen(false);
+      toast.success("Semester updated");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to update semester");
+    }
+  };
+
+  const handleUpdateSubject = async (e) => {
+    e.preventDefault();
+    try {
+      await updateSubject(selectedSubjectId, editSubjectForm);
+      setEditSubjectModalOpen(false);
+      toast.success("Subject updated");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to update subject");
+    }
+  };
+
   if (isInitializing) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -413,37 +475,59 @@ export default function InstitutionContent() {
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Semester
             </label>
-            <select
-              value={selectedSemesterId}
-              onChange={(e) => handleSemesterChange(e.target.value)}
-              className="input-field"
-            >
-              <option value="">Select semester</option>
-              {institutionSemesters.map((semester) => (
-                <option key={semester._id} value={semester._id}>
-                  {semester.name}
-                </option>
-              ))}
-            </select>
+            <div className="flex items-center gap-2">
+              <select
+                value={selectedSemesterId}
+                onChange={(e) => handleSemesterChange(e.target.value)}
+                className="input-field flex-1"
+              >
+                <option value="">Select semester</option>
+                {institutionSemesters.map((semester) => (
+                  <option key={semester._id} value={semester._id}>
+                    {semester.name}
+                  </option>
+                ))}
+              </select>
+              {selectedSemesterId && (
+                <button
+                  onClick={openEditSemesterModal}
+                  className="p-2 rounded-lg hover:bg-dark-hover transition-colors"
+                  title="Edit semester"
+                >
+                  <EditIcon fontSize="small" className="text-gray-400 hover:text-primary-400" />
+                </button>
+              )}
+            </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Subject
             </label>
-            <select
-              value={selectedSubjectId}
-              onChange={(e) => handleSubjectChange(e.target.value)}
-              className="input-field"
-              disabled={!selectedSemesterId || semesterSubjects.length === 0}
-            >
-              <option value="">Select subject</option>
-              {semesterSubjects.map((subject) => (
-                <option key={subject._id} value={subject._id}>
-                  {subject.name}
-                </option>
-              ))}
-            </select>
+            <div className="flex items-center gap-2">
+              <select
+                value={selectedSubjectId}
+                onChange={(e) => handleSubjectChange(e.target.value)}
+                className="input-field flex-1"
+                disabled={!selectedSemesterId || semesterSubjects.length === 0}
+              >
+                <option value="">Select subject</option>
+                {semesterSubjects.map((subject) => (
+                  <option key={subject._id} value={subject._id}>
+                    {subject.name}
+                  </option>
+                ))}
+              </select>
+              {selectedSubjectId && (
+                <button
+                  onClick={openEditSubjectModal}
+                  className="p-2 rounded-lg hover:bg-dark-hover transition-colors"
+                  title="Edit subject"
+                >
+                  <EditIcon fontSize="small" className="text-gray-400 hover:text-primary-400" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -808,6 +892,194 @@ export default function InstitutionContent() {
               </button>
               <button type="submit" className="btn-primary">
                 Add Subject
+              </button>
+            </div>
+          </form>
+        </div>
+      </Dialog>
+
+      {/* Edit Semester Modal */}
+      <Dialog
+        open={editSemesterModalOpen}
+        onClose={() => setEditSemesterModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Edit Semester</h2>
+            <button
+              onClick={() => setEditSemesterModalOpen(false)}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+              <CloseIcon />
+            </button>
+          </div>
+
+          <form onSubmit={handleUpdateSemester} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Name
+              </label>
+              <input
+                type="text"
+                value={editSemesterForm.name}
+                onChange={(e) =>
+                  setEditSemesterForm((prev) => ({ ...prev, name: e.target.value }))
+                }
+                className="input-field"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Type
+              </label>
+              <select
+                value={editSemesterForm.type}
+                onChange={(e) =>
+                  setEditSemesterForm((prev) => ({ ...prev, type: e.target.value }))
+                }
+                className="input-field"
+              >
+                {semesterTypes.map((typeOption) => (
+                  <option key={typeOption.value} value={typeOption.value}>
+                    {typeOption.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Description (Optional)
+              </label>
+              <textarea
+                value={editSemesterForm.description}
+                onChange={(e) =>
+                  setEditSemesterForm((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
+                className="input-field resize-none"
+                rows={3}
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setEditSemesterModalOpen(false)}
+                className="btn-secondary"
+              >
+                Cancel
+              </button>
+              <button type="submit" className="btn-primary">
+                Save Changes
+              </button>
+            </div>
+          </form>
+        </div>
+      </Dialog>
+
+      {/* Edit Subject Modal */}
+      <Dialog
+        open={editSubjectModalOpen}
+        onClose={() => setEditSubjectModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Edit Subject</h2>
+            <button
+              onClick={() => setEditSubjectModalOpen(false)}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+              <CloseIcon />
+            </button>
+          </div>
+
+          <form onSubmit={handleUpdateSubject} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Subject Name
+              </label>
+              <input
+                type="text"
+                value={editSubjectForm.name}
+                onChange={(e) =>
+                  setEditSubjectForm((prev) => ({ ...prev, name: e.target.value }))
+                }
+                className="input-field"
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Code (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={editSubjectForm.code}
+                  onChange={(e) =>
+                    setEditSubjectForm((prev) => ({
+                      ...prev,
+                      code: e.target.value,
+                    }))
+                  }
+                  className="input-field"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Instructor (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={editSubjectForm.instructor}
+                  onChange={(e) =>
+                    setEditSubjectForm((prev) => ({
+                      ...prev,
+                      instructor: e.target.value,
+                    }))
+                  }
+                  className="input-field"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Description (Optional)
+              </label>
+              <textarea
+                value={editSubjectForm.description}
+                onChange={(e) =>
+                  setEditSubjectForm((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
+                className="input-field resize-none"
+                rows={3}
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setEditSubjectModalOpen(false)}
+                className="btn-secondary"
+              >
+                Cancel
+              </button>
+              <button type="submit" className="btn-primary">
+                Save Changes
               </button>
             </div>
           </form>

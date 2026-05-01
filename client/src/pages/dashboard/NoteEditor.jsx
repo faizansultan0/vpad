@@ -43,6 +43,8 @@ import DownloadIcon from "@mui/icons-material/Download";
 import SendIcon from "@mui/icons-material/Send";
 import DeleteIcon from "@mui/icons-material/Delete";
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 
 const MenuButton = ({ onClick, active, disabled, children, title }) => (
   <button
@@ -251,6 +253,7 @@ export default function NoteEditor() {
   const [isCommentSubmitting, setIsCommentSubmitting] = useState(false);
   const [isDictating, setIsDictating] = useState(false);
   const [deleteNoteDialogOpen, setDeleteNoteDialogOpen] = useState(false);
+  const [commentsExpanded, setCommentsExpanded] = useState(false);
   const fetchedRef = useRef(false);
   const recorderRef = useRef(null);
   const recordingStreamRef = useRef(null);
@@ -843,8 +846,8 @@ export default function NoteEditor() {
 
   return (
     <div className="h-[calc(100vh-120px)] flex flex-col">
-      <div className="flex items-center justify-between pb-4 border-b border-white/[0.06]">
-        <div className="flex items-center space-x-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-white/[0.06]">
+        <div className="flex items-center space-x-4 min-w-0 flex-1">
           <button
             onClick={handleBack}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
@@ -858,11 +861,11 @@ export default function NoteEditor() {
               setTitle(e.target.value);
               setHasChanges(true);
             }}
-            className="text-xl font-semibold text-white bg-transparent border-none outline-none focus:ring-0 w-full max-w-md"
+            className="text-xl font-semibold text-white bg-transparent border-none outline-none focus:ring-0 w-full max-w-md min-w-0"
             placeholder="Note title"
           />
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 flex-shrink-0">
           {activeUsers.length > 0 && (
             <AvatarGroup max={3} className="mr-2">
               {activeUsers.map((u) => (
@@ -1052,20 +1055,35 @@ export default function NoteEditor() {
         <EditorContent editor={editor} className="prose max-w-none h-full" />
       </div>
 
-      <div className="mt-4 border border-white/[0.06] rounded-xl bg-dark-card p-4 overflow-auto max-h-[40vh]">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold text-white">
+      <div className="mt-4 border border-white/[0.06] rounded-xl bg-dark-card overflow-hidden">
+        <button
+          onClick={() => setCommentsExpanded(!commentsExpanded)}
+          className="w-full flex items-center justify-between p-4 hover:bg-dark-hover transition-colors"
+        >
+          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
             Comments
+            {comments.length > 0 && (
+              <span className="text-xs font-normal bg-primary-600/20 text-primary-300 px-2 py-0.5 rounded-full">
+                {comments.length}
+              </span>
+            )}
           </h3>
-          {!canComment && (
-            <span className="text-xs text-gray-400">
-              View-only collaborators cannot add comments
-            </span>
-          )}
-        </div>
+          <div className="flex items-center gap-2">
+            {!canComment && (
+              <span className="text-xs text-gray-400">View-only</span>
+            )}
+            {commentsExpanded ? (
+              <ExpandLessIcon className="text-gray-400" />
+            ) : (
+              <ExpandMoreIcon className="text-gray-400" />
+            )}
+          </div>
+        </button>
 
-        <form onSubmit={handleCommentSubmit} className="space-y-3 mb-4">
-          <textarea
+        {commentsExpanded && (
+          <div className="p-4 pt-0 overflow-auto max-h-[40vh]">
+            <form onSubmit={handleCommentSubmit} className="space-y-3 mb-4">
+              <textarea
             value={commentInput}
             onChange={(e) => setCommentInput(e.target.value)}
             className="input-field resize-none"
@@ -1105,7 +1123,7 @@ export default function NoteEditor() {
                 <button
                   type="button"
                   onClick={clearRecordedAudio}
-                  className="text-sm px-3 py-2 rounded-lg bg-dark-surface hover:bg-gray-200 hover:bg-dark-hover transition-colors"
+                  className="text-sm px-3 py-2 rounded-lg bg-dark-surface hover:bg-dark-hover text-gray-300 hover:text-white transition-colors"
                 >
                   Remove Audio
                 </button>
@@ -1207,6 +1225,8 @@ export default function NoteEditor() {
             ))
           )}
         </div>
+        </div>
+        )}
       </div>
 
       <Menu

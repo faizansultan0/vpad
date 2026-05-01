@@ -63,7 +63,14 @@ const testimonials = [
   { name: "Mariam Khan", role: "Psychology Student", text: "I upload images of diagrams from lectures, and the AI OCR feature extracts the text flawlessly. Pure magic." },
   { name: "Usman Ali", role: "Mathematics Major", text: "The AI quiz generator is the best study tool I've used. It creates perfect practice problems from my notes." },
   { name: "Sana Iqbal", role: "Chemistry Student", text: "The threaded comments make discussing complex topics with study groups incredibly efficient and organized." },
-  { name: "Hamza Syed", role: "Economics Student", text: "I've tried every note-taking app out there. VPad is the first one that feels like it was actually built for students." }
+  { name: "Hamza Syed", role: "Economics Student", text: "I've tried every note-taking app out there. VPad is the first one that feels like it was actually built for students." },
+  // Group 3
+  { name: "Amina Jamil", role: "Design Student", text: "The visual organization and aesthetic of the platform make me actually want to open my notes and study." },
+  { name: "Kamran Yousaf", role: "Biology Major", text: "Being able to pin important notes and favorite key subjects has saved me during finals week." },
+  { name: "Nida Abbas", role: "Sociology Student", text: "I used to lose my notes all the time. Now everything is perfectly categorized by semester and subject." },
+  { name: "Saad Qureshi", role: "Engineering Student", text: "The ability to export my rich notes to perfectly formatted PDFs is a game-changer for submitting assignments." },
+  { name: "Rabia Khalid", role: "Medical Student", text: "Voice comments are amazing for quick feedback when studying anatomy diagrams with my peers." },
+  { name: "Fahad Farooq", role: "Computer Science Student", text: "Fast, reliable, and looks gorgeous. VPad is exactly what a modern student workspace should be." }
 ];
 
 const wordVariants = {
@@ -119,14 +126,14 @@ export default function Home() {
       <section className="relative overflow-hidden py-32 lg:py-40 min-h-screen flex items-center">
         {/* Background Graphic */}
         <div className="absolute inset-0 z-0">
-          <img 
-            src="/hero_students_bg.png" 
-            alt="Students collaborating" 
+          <img
+            src="/hero_students_bg.png"
+            alt="Students collaborating"
             className="w-full h-full object-cover opacity-20 mix-blend-overlay"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-[#0a0118]/80 via-[#1a0a2e]/90 to-[#0d1b2a]" />
         </div>
-        
+
         <AnimatedBackground variant="hero" showMesh showParticles />
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
@@ -253,7 +260,7 @@ export default function Home() {
                     <span className="w-0.5 h-5 bg-primary-400 inline-block shadow-[0_0_8px_#8b5cf6]" />
                   </motion.div>
                 </div>
-                
+
                 {/* Decorative background grid inside mockup */}
                 <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)] pointer-events-none" />
               </div>
@@ -262,7 +269,7 @@ export default function Home() {
             <div className="absolute -inset-4 bg-gradient-to-r from-primary-500/20 to-secondary-500/20 rounded-3xl blur-3xl -z-10" />
           </motion.div>
         </div>
-        
+
         {/* Section Divider */}
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#130a2a] to-transparent z-10" />
       </section>
@@ -303,13 +310,19 @@ export default function Home() {
             })}
           </div>
         </div>
-        
+
         {/* Section Divider */}
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0a0118] to-transparent z-10 pointer-events-none" />
       </section>
 
       {/* ── How it Works Section ── */}
-      <section className="py-32 relative bg-[#0a0118]">
+      <section 
+        className="py-32 relative bg-fixed bg-center bg-cover"
+        style={{ backgroundImage: "url('/vpad_parallax_bg.jpg')" }}
+      >
+        <div className="absolute inset-0 bg-[#0a0118]/70 mix-blend-multiply" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0a0118] via-transparent to-[#0a0118]" />
+
         <AnimatedBackground variant="particles" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center mb-20">
@@ -324,7 +337,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12 relative">
             {/* Connecting line for desktop */}
             <div className="hidden md:block absolute top-12 left-1/6 right-1/6 h-0.5 bg-gradient-to-r from-transparent via-primary-500/30 to-transparent" />
-            
+
             {[
               { step: "01", title: "Setup Hierarchy", desc: "Create your Institution, add your current Semesters, and define your Subjects." },
               { step: "02", title: "Take Notes", desc: "Use our rich text editor with LaTeX support to craft beautiful, organized notes." },
@@ -360,15 +373,19 @@ export default function Home() {
           <div className="absolute inset-y-0 left-0 w-24 sm:w-48 bg-gradient-to-r from-[#0a0118] to-transparent z-10 pointer-events-none" />
           <div className="absolute inset-y-0 right-0 w-24 sm:w-48 bg-gradient-to-l from-[#130a2a] to-transparent z-10 pointer-events-none" />
 
-          {[0, 1].map((rowIndex) => {
-            const group = rowIndex === 0 ? testimonials.slice(0, 6) : testimonials.slice(6, 12);
+          {[0, 1, 2].map((rowIndex) => {
+            const group = rowIndex === 0
+              ? testimonials.slice(0, 6)
+              : rowIndex === 1
+                ? testimonials.slice(6, 12)
+                : testimonials.slice(12, 18);
             return (
-              <div 
-                key={rowIndex} 
-                className="flex whitespace-nowrap animate-marquee" 
-                style={{ 
-                  animationDirection: rowIndex % 2 === 0 ? 'normal' : 'reverse', 
-                  animationDuration: `${50 + rowIndex * 15}s` 
+              <div
+                key={rowIndex}
+                className="flex whitespace-nowrap animate-marquee"
+                style={{
+                  animationDirection: rowIndex % 2 === 0 ? 'normal' : 'reverse',
+                  animationDuration: `${50 + rowIndex * 15}s`
                 }}
               >
                 {/* Repeat group to create seamless loop */}
@@ -393,6 +410,32 @@ export default function Home() {
               </div>
             );
           })}
+        </div>
+      </section>
+
+      {/* ── Parallax Banner Section ── */}
+      <section
+        className="relative py-40 overflow-hidden bg-fixed bg-center bg-cover"
+        style={{ backgroundImage: "url('/vpad_parallax_bg.jpg')" }}
+      >
+        <div className="absolute inset-0 bg-[#0a0118]/70 mix-blend-multiply" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#130a2a] via-transparent to-[#130a2a]" />
+
+        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+          >
+            <h2 className="text-4xl sm:text-6xl font-bold text-white mb-6 tracking-tight drop-shadow-2xl">
+              Focus on <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-pink-500">Learning</span>
+              <br />We Handle the Rest
+            </h2>
+            <p className="text-xl text-gray-300 max-w-2xl mx-auto drop-shadow-md">
+              Experience the power of an intelligent, beautifully designed workspace built for the next generation of students.
+            </p>
+          </motion.div>
         </div>
       </section>
 

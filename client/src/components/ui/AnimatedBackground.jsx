@@ -1,4 +1,7 @@
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import Particles, { initParticlesEngine } from "@tsparticles/react";
+import { loadSlim } from "@tsparticles/slim";
 
 const orbConfigs = {
   hero: [
@@ -26,17 +29,52 @@ const orbConfigs = {
   ],
 };
 
-const particleDots = Array.from({ length: 20 }, (_, i) => ({
-  id: i,
-  size: Math.random() * 4 + 2,
-  x: Math.random() * 100,
-  y: Math.random() * 100,
-  duration: Math.random() * 10 + 8,
-  delay: Math.random() * 5,
-}));
-
 export default function AnimatedBackground({ variant = "hero", className = "", showMesh = false, showParticles = false }) {
   const orbs = orbConfigs[variant] || orbConfigs.hero;
+  const [init, setInit] = useState(false);
+
+  // Force showParticles for auth and minimal variants to ensure they get the live background
+  const shouldShowParticles = showParticles || variant === "auth" || variant === "minimal";
+
+  useEffect(() => {
+    if (shouldShowParticles && !init) {
+      initParticlesEngine(async (engine) => {
+        await loadSlim(engine);
+      }).then(() => {
+        setInit(true);
+      });
+    }
+  }, [shouldShowParticles, init]);
+
+  const particlesOptions = {
+    background: {
+      color: { value: "transparent" },
+    },
+    fpsLimit: 60,
+    particles: {
+      color: { value: ["#8b5cf6", "#a855f7", "#ec4899"] },
+      links: {
+        color: "#8b5cf6",
+        distance: 150,
+        enable: true,
+        opacity: 0.2,
+        width: 1,
+      },
+      move: {
+        direction: "none",
+        enable: true,
+        outModes: { default: "bounce" },
+        random: true,
+        speed: 1,
+        straight: false,
+      },
+      number: { density: { enable: true, area: 800 }, value: 40 },
+      opacity: { value: 0.3 },
+      shape: { type: "circle" },
+      size: { value: { min: 1, max: 3 } },
+    },
+    detectRetina: true,
+  };
 
   return (
     <div className={`absolute inset-0 overflow-hidden pointer-events-none ${className}`}>
@@ -53,33 +91,13 @@ export default function AnimatedBackground({ variant = "hero", className = "", s
         <div className="absolute inset-0 mesh-grid opacity-60" />
       )}
 
-      {/* Floating particle dots */}
-      {showParticles && (
-        <div className="particle-field">
-          {particleDots.map((dot) => (
-            <motion.div
-              key={dot.id}
-              className="particle"
-              style={{
-                width: dot.size,
-                height: dot.size,
-                left: `${dot.x}%`,
-                top: `${dot.y}%`,
-              }}
-              animate={{
-                y: [0, -30, 10, -20, 0],
-                x: [0, 15, -10, 5, 0],
-                opacity: [0.2, 0.5, 0.3, 0.6, 0.2],
-              }}
-              transition={{
-                duration: dot.duration,
-                delay: dot.delay,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-            />
-          ))}
-        </div>
+      {/* Floating live particle dots */}
+      {shouldShowParticles && init && (
+        <Particles
+          id={`tsparticles-${variant}`}
+          options={particlesOptions}
+          className="absolute inset-0 z-0 opacity-60"
+        />
       )}
     </div>
   );

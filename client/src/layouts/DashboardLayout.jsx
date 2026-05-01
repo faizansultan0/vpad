@@ -78,7 +78,12 @@ export default function DashboardLayout() {
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
             {sidebarLinks.map((link) => {
               const Icon = link.icon;
-              const isActive = location.pathname === link.path;
+              const isActive = link.path === "/dashboard"
+                ? location.pathname === "/dashboard"
+                : link.path === "/institutions"
+                  ? /^\/(institutions|semesters|subjects|notes)(\/|$)/.test(location.pathname)
+                  : location.pathname.startsWith(link.path);
+
               const showBadge =
                 link.path === "/notifications" && unreadCount > 0;
 
