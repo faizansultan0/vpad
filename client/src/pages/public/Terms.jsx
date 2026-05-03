@@ -45,36 +45,36 @@ const sections = [
 
 export default function Terms() {
   return (
-    <div className="py-20">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="py-32 bg-[#0a0118] min-h-screen">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-10"
+          className="mb-16 text-center"
         >
-          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">
+          <h1 className="text-4xl sm:text-5xl font-bold text-white mb-4 tracking-tight">
             Terms of Service
           </h1>
-          <p className="text-gray-600">Last updated: April 12, 2026</p>
+          <p className="text-primary-400">Last updated: April 12, 2026</p>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="card space-y-6"
+          className="glass-card-glow border border-white/10 bg-[#130a2a]/60 p-8 sm:p-12 space-y-8"
         >
-          <p className="text-gray-700 leading-relaxed">
+          <p className="text-gray-300 text-lg leading-relaxed">
             These Terms of Service govern your use of VPad. Please read them
             carefully before using the platform.
           </p>
 
           {sections.map((section) => (
-            <section key={section.title} className="space-y-2">
-              <h2 className="text-xl font-semibold text-gray-900">
+            <section key={section.title} className="space-y-3">
+              <h2 className="text-2xl font-bold text-white">
                 {section.title}
               </h2>
-              <p className="text-gray-700 leading-relaxed">{section.content}</p>
+              <p className="text-gray-400 leading-relaxed text-lg">{section.content}</p>
             </section>
           ))}
         </motion.div>

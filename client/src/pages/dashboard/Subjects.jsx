@@ -94,7 +94,7 @@ export default function Subjects() {
     try {
       if (editingSubject) {
         await updateSubject(editingSubject._id, formData);
-        toast.success("Subject updated");
+        toast.success("Subject renamed");
       } else {
         await createSubject({ ...formData, semesterId });
         toast.success("Subject created");
@@ -168,10 +168,11 @@ export default function Subjects() {
                   >
                     <MenuBookIcon className="text-white" fontSize="large" />
                   </div>
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
+                  <div className="flex space-x-1">
                     <button
                       onClick={() => openModal(sub)}
                       className="p-2 hover:bg-gray-100 rounded-lg"
+                      title="Rename subject"
                     >
                       <EditIcon fontSize="small" className="text-gray-500" />
                     </button>
@@ -188,7 +189,7 @@ export default function Subjects() {
                     semester?.institution?._id || semester?.institution
                   }/content?semester=${semesterId}&subject=${sub._id}`}
                 >
-                  <h3 className="text-lg font-semibold text-gray-900 hover:text-primary-600 transition-colors">
+                  <h3 className="text-lg font-semibold text-white hover:text-primary-400 transition-colors">
                     {sub.name}
                   </h3>
                   {sub.code && (
@@ -245,7 +246,7 @@ export default function Subjects() {
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold">
-              {editingSubject ? "Edit Subject" : "Add Subject"}
+              {editingSubject ? "Rename Subject" : "Add Subject"}
             </h2>
             <button
               onClick={() => setModalOpen(false)}
@@ -343,7 +344,7 @@ export default function Subjects() {
                 Cancel
               </button>
               <button type="submit" className="btn-primary">
-                {editingSubject ? "Update" : "Create"}
+                {editingSubject ? "Save Rename" : "Create"}
               </button>
             </div>
           </form>
