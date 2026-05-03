@@ -56,11 +56,11 @@ export default function About() {
       });
 
       items.forEach((item, i) => {
-        gsap.fromTo(item, 
+        gsap.fromTo(item,
           { opacity: 0, x: i % 2 === 0 ? -50 : 50 },
-          { 
-            opacity: 1, 
-            x: 0, 
+          {
+            opacity: 1,
+            x: 0,
             duration: 0.8,
             ease: "back.out(1.7)",
             scrollTrigger: {
@@ -106,10 +106,22 @@ export default function About() {
             </div>
           </motion.div>
         </div>
+
+        {/* Section Divider */}
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0a0118] to-transparent z-10 pointer-events-none" />
       </div>
 
       {/* ── Mission ── */}
-      <section className="py-32 relative bg-[#130a2a]">
+      <section
+        className="py-32 relative overflow-hidden bg-fixed bg-center"
+        style={{
+          backgroundImage: "url('/mission_parallax_bg.jpg')",
+          backgroundSize: "max(135vw, 135vh)"
+        }}
+      >
+        <div className="absolute inset-0 bg-[#0a0118]/50 mix-blend-multiply" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0a0118] from-2% via-transparent via-50% to-[#0a0118] to-100%" />
+
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <h2 className="text-4xl font-bold text-white text-center mb-16">Our Mission</h2>
           <div className="glass-card-glow gradient-border-animated !p-10 sm:!p-16 bg-[#0a0118]/80 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
@@ -124,11 +136,11 @@ export default function About() {
       <section className="py-32 relative bg-[#0a0118]" ref={timelineRef}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <h2 className="text-4xl font-bold text-white text-center mb-20">Our Story</h2>
-          
+
           <div className="relative max-w-4xl mx-auto">
             {/* Center Line */}
             <div className="absolute left-[20px] md:left-1/2 top-0 bottom-0 w-1 bg-white/5 -translate-x-1/2 rounded-full overflow-hidden">
-               <div className="timeline-line-fill w-full h-0 gradient-bg" />
+              <div className="timeline-line-fill w-full h-0 gradient-bg" />
             </div>
 
             {timeline.map((item, index) => (

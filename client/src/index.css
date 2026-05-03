@@ -250,10 +250,6 @@
 }
 
 /* ── Shimmer line ── */
-.shimmer-line {
-  @apply relative overflow-hidden;
-}
-
 .shimmer-line::after {
   content: '';
   position: absolute;
@@ -311,6 +307,67 @@
 
 .gradient-border-animated:hover::before {
   opacity: 1;
+}
+
+
+/* ═══════════════════════════════════════════════
+   AUTH FORM — BORDER SHINE DOTS
+   Technique: FrontendHero mask + rotating conic-gradient.
+   The spinning div lives INSIDE the 1px masked border strip,
+   so it can NEVER bleed onto the card panels.
+   ═══════════════════════════════════════════════ */
+
+/* The mask container — covers the entire card, exposes only a 1px border */
+.border-shine-mask {
+  position: absolute;
+  inset: 0;
+  padding: 1px;                        /* border thickness */
+  /* Cut out the inner rectangle — leaving only the 1px outer ring visible */
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0) border-box;
+  mask-composite: exclude;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0) border-box;
+  -webkit-mask-composite: destination-out;
+  pointer-events: none;
+  overflow: hidden;                    /* keep the spinning div clipped */
+  z-index: 10;
+}
+
+/* The spinning conic-gradient — two thin feathered shine spots 180° apart */
+.border-shine-glow {
+  position: absolute;
+  /* Large enough to cover any card size from its center */
+  width: 200%;
+  height: 200%;
+  top: -50%;
+  left: -50%;
+  transform-origin: center;
+  background: conic-gradient(
+    from 0deg,
+    /* Spot 1 — feathered white shine */
+    transparent      0%,
+    transparent      6%,
+    rgba(200,180,255,0.15) 8%,
+    rgba(255,255,255,0.85) 10%,
+    rgba(200,180,255,0.15) 12%,
+    transparent      14%,
+    /* gap to opposite side */
+    transparent      56%,
+    rgba(200,180,255,0.15) 58%,
+    rgba(255,255,255,0.85) 60%,
+    rgba(200,180,255,0.15) 62%,
+    transparent      64%,
+    /* back to start */
+    transparent      100%
+  );
+}
+
+@keyframes borderShineRotate {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
 
 /* ── 3D Tilt perspective ── */

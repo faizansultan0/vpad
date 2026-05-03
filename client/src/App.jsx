@@ -31,6 +31,7 @@ import Profile from "./pages/dashboard/Profile";
 import Notifications from "./pages/dashboard/Notifications";
 
 import ParticleBackground from "./components/ui/ParticleBackground";
+import ScrollToTop from "./components/ui/ScrollToTop";
 
 function App() {
   const { isAuthenticated, accessToken, getMe } = useAuthStore();
@@ -60,6 +61,7 @@ function App() {
 
   return (
     <>
+      <ScrollToTop />
       <ParticleBackground />
       <div className="relative z-10">
         <Routes>

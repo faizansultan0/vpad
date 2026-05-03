@@ -20,7 +20,7 @@ export default function PublicLayout() {
   return (
     <div className="min-h-screen flex flex-col text-gray-100">
       {/* ── Navbar ── */}
-      <header className="sticky top-0 z-50 shimmer-line" style={{ background: "rgba(10, 1, 24, 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+      <header className="fixed top-0 left-0 right-0 w-full z-50 shimmer-line" style={{ transform: "translateZ(0)", background: "rgba(10, 1, 24, 0.5)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link to="/" className="flex items-center space-x-2 group">

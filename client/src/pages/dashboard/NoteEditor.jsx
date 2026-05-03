@@ -252,6 +252,7 @@ export default function NoteEditor() {
   const [isRecording, setIsRecording] = useState(false);
   const [isCommentSubmitting, setIsCommentSubmitting] = useState(false);
   const [isDictating, setIsDictating] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
   const [deleteNoteDialogOpen, setDeleteNoteDialogOpen] = useState(false);
   const [commentsExpanded, setCommentsExpanded] = useState(false);
   const fetchedRef = useRef(false);
@@ -655,6 +656,7 @@ export default function NoteEditor() {
 
   const handleShare = async (e) => {
     e.preventDefault();
+    setIsSharing(true);
     try {
       await shareNote(noteId, shareEmail, sharePermission);
       toast.success("Note shared successfully");
@@ -662,24 +664,28 @@ export default function NoteEditor() {
       setShareEmail("");
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to share");
+    } finally {
+      setIsSharing(false);
     }
   };
 
   const handleSummarize = async (regenerate = false) => {
+    setSummaryModal(true);
     setAiLoading(true);
     try {
       const result = await summarizeNote(noteId, { regenerate });
       setSummary(result.summary?.text || "");
       setSummaryNeedsRegeneration(Boolean(result.needsRegeneration));
-      setSummaryModal(true);
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to summarize");
+      if (!regenerate) setSummaryModal(false);
     } finally {
       setAiLoading(false);
     }
   };
 
   const handleGenerateQuiz = async (regenerate = false) => {
+    setQuizModal(true);
     setAiLoading(true);
     try {
       const result = await generateQuiz(noteId, {
@@ -718,10 +724,10 @@ export default function NoteEditor() {
         setQuizResult(null);
       }
 
-      setQuizModal(true);
       toast.success(regenerate ? "Quiz regenerated" : "Quiz ready");
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to generate quiz");
+      if (!regenerate) setQuizModal(false);
     } finally {
       setAiLoading(false);
     }
@@ -1399,11 +1405,12 @@ export default function NoteEditor() {
                 type="button"
                 onClick={() => setShareModal(false)}
                 className="btn-secondary"
+                disabled={isSharing}
               >
                 Cancel
               </button>
-              <button type="submit" className="btn-primary">
-                Share
+              <button type="submit" className="btn-primary" disabled={isSharing}>
+                {isSharing ? "Sharing..." : "Share"}
               </button>
             </div>
           </form>
@@ -1480,59 +1487,68 @@ export default function NoteEditor() {
               </button>
             </div>
           </div>
-          {quizResult && (
-            <div className="mb-4 p-3 rounded-xl bg-primary-50 dark:bg-primary-600/20 text-primary-800 dark:text-primary-200 text-sm font-medium">
-              Score: {quizResult.score}/{quizResult.totalQuestions} (
-              {quizResult.percentage}%)
+          {aiLoading ? (
+            <div className="flex flex-col justify-center items-center py-12">
+              <div className="spinner mb-4" />
+              <span className="text-gray-400">Processing...</span>
             </div>
-          )}
-          {quiz?.questions?.map((q, i) => (
-            <div
-              key={i}
-              className="mb-6 p-4 bg-dark-surface rounded-xl"
-            >
-              <p className="font-medium text-white mb-3">
-                {i + 1}. {q.question}
-              </p>
-              <div className="space-y-2">
-                {q.options?.map((opt, j) => (
-                  <button
-                    key={j}
-                    type="button"
-                    onClick={() => handleSelectOption(i, j)}
-                    className={`w-full text-left p-2 rounded-lg border transition-colors ${
-                      quizSubmitted
-                        ? j === q.correctAnswer
-                          ? "border-green-500 bg-green-50"
-                          : selectedAnswers[i] === j
-                            ? "border-red-500 bg-red-50"
-                            : "border-white/[0.06]"
-                        : selectedAnswers[i] === j
-                          ? "border-primary-500 bg-primary-50 dark:bg-primary-600/20"
-                          : "border-white/[0.06] hover:border-primary-300"
-                    }`}
-                  >
-                    {String.fromCharCode(65 + j)}. {opt}
-                  </button>
-                ))}
-              </div>
-              {quizSubmitted && q.explanation && (
-                <p className="text-sm text-gray-400 mt-2">
-                  💡 {q.explanation}
-                </p>
+          ) : (
+            <>
+              {quizResult && (
+                <div className="mb-4 p-3 rounded-xl bg-primary-50 dark:bg-primary-600/20 text-primary-800 dark:text-primary-200 text-sm font-medium">
+                  Score: {quizResult.score}/{quizResult.totalQuestions} (
+                  {quizResult.percentage}%)
+                </div>
               )}
-            </div>
-          ))}
-          {quiz?.questions?.length > 0 && !quizSubmitted && (
-            <div className="flex justify-end mt-4">
-              <button
-                onClick={handleSubmitQuiz}
-                className="btn-primary"
-                disabled={aiLoading}
-              >
-                Submit Quiz
-              </button>
-            </div>
+              {quiz?.questions?.map((q, i) => (
+                <div
+                  key={i}
+                  className="mb-6 p-4 bg-dark-surface rounded-xl"
+                >
+                  <p className="font-medium text-white mb-3">
+                    {i + 1}. {q.question}
+                  </p>
+                  <div className="space-y-2">
+                    {q.options?.map((opt, j) => (
+                      <button
+                        key={j}
+                        type="button"
+                        onClick={() => handleSelectOption(i, j)}
+                        className={`w-full text-left p-2 rounded-lg border transition-colors ${
+                          quizSubmitted
+                            ? j === q.correctAnswer
+                              ? "border-green-500 bg-green-50 text-green-900 dark:bg-green-900/30 dark:text-green-100"
+                              : selectedAnswers[i] === j
+                                ? "border-red-500 bg-red-50 text-red-900 dark:bg-red-900/30 dark:text-red-100"
+                                : "border-white/[0.06]"
+                            : selectedAnswers[i] === j
+                              ? "border-primary-500 bg-primary-50 dark:bg-primary-600/20 text-primary-900 dark:text-primary-100"
+                              : "border-white/[0.06] hover:border-primary-300"
+                        }`}
+                        disabled={quizSubmitted}
+                      >
+                        {String.fromCharCode(65 + j)}. {opt}
+                      </button>
+                    ))}
+                  </div>
+                  {quizSubmitted && q.explanation && (
+                    <p className="text-sm text-gray-400 mt-2">
+                      💡 {q.explanation}
+                    </p>
+                  )}
+                </div>
+              ))}
+              {quiz?.questions?.length > 0 && !quizSubmitted && (
+                <div className="flex justify-end mt-4">
+                  <button
+                    onClick={handleSubmitQuiz}
+                    className="btn-primary"
+                  >
+                    Submit Quiz
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </Dialog>

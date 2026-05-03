@@ -10,6 +10,7 @@ import EmailIcon from "@mui/icons-material/Email";
 import LockIcon from "@mui/icons-material/Lock";
 import GroupsIcon from "@mui/icons-material/Groups";
 import AnimatedBackground from "../../components/ui/AnimatedBackground";
+import BorderGlowDots from "../../components/ui/BorderGlowDots";
 
 const fv = { hidden: { opacity: 0, x: 20 }, visible: (i) => ({ opacity: 1, x: 0, transition: { delay: i * 0.08, duration: 0.4, ease: "easeOut" } }) };
 
@@ -37,10 +38,12 @@ export default function Register() {
   const set = (k, v) => setFormData({ ...formData, [k]: v });
 
   return (
-    <div className="min-h-[calc(100vh-200px)] flex items-center justify-center py-12 px-4">
+    <div className="min-h-[calc(100vh-200px)] flex items-center justify-center pt-28 pb-12 px-4">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full max-w-4xl">
-        <div className="flex flex-col lg:flex-row rounded-3xl overflow-hidden" style={{ boxShadow: "0 25px 60px rgba(0,0,0,0.5)" }}>
-          <div className="relative lg:w-5/12 bg-gradient-to-br from-secondary-600 via-primary-500 to-primary-600 p-8 lg:p-10 flex flex-col justify-center overflow-hidden">
+        <div className="relative rounded-3xl" style={{ isolation: "isolate" }}>
+          <BorderGlowDots radius={24} duration={18} />
+          <div className="flex flex-col lg:flex-row rounded-3xl overflow-hidden shadow-2xl" style={{ boxShadow: "0 25px 60px rgba(0,0,0,0.5)" }}>
+            <div className="relative lg:w-5/12 bg-gradient-to-br from-secondary-600 via-primary-500 to-primary-600 p-8 lg:p-10 flex flex-col justify-center overflow-hidden">
             <AnimatedBackground variant="auth" />
             <div className="relative z-10">
               <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-6">
@@ -93,6 +96,7 @@ export default function Register() {
               <p className="text-gray-400 text-sm">Already have an account? <Link to="/login" className="text-primary-400 hover:text-primary-300 font-medium">Sign in</Link></p>
             </motion.div>
           </div>
+        </div>
         </div>
       </motion.div>
     </div>
