@@ -23,8 +23,8 @@ export default function SharedNotes() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Shared Notes</h1>
-        <p className="text-gray-600">Notes shared with you by others</p>
+        <h1 className="text-2xl font-bold text-white">Shared Notes</h1>
+        <p className="text-gray-400">Notes shared with you by others</p>
       </div>
 
       <div className="relative">
@@ -64,7 +64,7 @@ export default function SharedNotes() {
                     <span>Shared</span>
                   </div>
                 </div>
-                <h3 className="font-semibold text-gray-900 line-clamp-2 mb-2">
+                <h3 className="font-semibold text-white line-clamp-2 mb-2">
                   {note.title}
                 </h3>
                 <div className="flex items-center space-x-2 mb-2">
@@ -74,7 +74,7 @@ export default function SharedNotes() {
                   >
                     {note.user?.name?.charAt(0)}
                   </Avatar>
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-gray-400">
                     {note.user?.name}
                   </span>
                 </div>
@@ -89,10 +89,10 @@ export default function SharedNotes() {
       ) : (
         <div className="card text-center py-16">
           <NoteIcon className="text-gray-300 mb-4" style={{ fontSize: 64 }} />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+          <h3 className="text-xl font-semibold text-white mb-2">
             {search ? "No Notes Found" : "No Shared Notes"}
           </h3>
-          <p className="text-gray-600">
+          <p className="text-gray-400">
             {search
               ? "Try a different search term"
               : "When someone shares a note with you, it will appear here"}

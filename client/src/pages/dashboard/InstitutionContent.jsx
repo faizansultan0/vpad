@@ -11,6 +11,11 @@ import toast from "react-hot-toast";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import AddIcon from "@mui/icons-material/Add";
 import NoteIcon from "@mui/icons-material/Note";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import DownloadIcon from "@mui/icons-material/Download";
+import PushPinIcon from "@mui/icons-material/PushPin";
+import StarIcon from "@mui/icons-material/Star";
 import SearchIcon from "@mui/icons-material/Search";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
@@ -27,7 +32,7 @@ const semesterTypes = [
 
 export default function InstitutionContent() {
   const { institutionId } = useParams();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const {
     institutions,
@@ -39,17 +44,25 @@ export default function InstitutionContent() {
     fetchSubjects,
     fetchNotes,
     createNote,
+    deleteNote,
     createSemester,
     createSubject,
-    isLoading,
+    updateSemester,
+    updateSubject,
+    updateNote,
+    fetchNoteForDownload,
+    downloadNoteAsPdf,
   } = useNoteStore();
 
   const [selectedSemesterId, setSelectedSemesterId] = useState("");
   const [selectedSubjectId, setSelectedSubjectId] = useState("");
   const [search, setSearch] = useState("");
   const [isInitializing, setIsInitializing] = useState(true);
+  const [isNotesLoading, setIsNotesLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [newNoteTitle, setNewNoteTitle] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [downloadingNoteId, setDownloadingNoteId] = useState(null);
   const [semesterModalOpen, setSemesterModalOpen] = useState(false);
   const [subjectModalOpen, setSubjectModalOpen] = useState(false);
   const [semesterForm, setSemesterForm] = useState({
@@ -63,6 +76,22 @@ export default function InstitutionContent() {
     description: "",
     instructor: "",
   });
+  const [editSemesterModalOpen, setEditSemesterModalOpen] = useState(false);
+  const [editSubjectModalOpen, setEditSubjectModalOpen] = useState(false);
+  const [editSemesterForm, setEditSemesterForm] = useState({
+    name: "",
+    type: "semester",
+    description: "",
+  });
+  const [editSubjectForm, setEditSubjectForm] = useState({
+    name: "",
+    code: "",
+    description: "",
+    instructor: "",
+  });
+  const [editNoteModalOpen, setEditNoteModalOpen] = useState(false);
+  const [selectedNoteForEdit, setSelectedNoteForEdit] = useState(null);
+  const [editNoteForm, setEditNoteForm] = useState({ title: "", description: "" });
 
   const institution = useMemo(
     () => institutions.find((item) => item._id === institutionId),
@@ -106,15 +135,58 @@ export default function InstitutionContent() {
     });
   }, [notes, search, selectedSemesterId, selectedSubjectId]);
 
+  const buildContentPath = (semesterId, subjectId) => {
+    if (!institutionId) {
+      return "/institutions";
+    }
+
+    const params = new URLSearchParams();
+    if (semesterId) {
+      params.set("semester", String(semesterId));
+    }
+    if (subjectId) {
+      params.set("subject", String(subjectId));
+    }
+
+    const query = params.toString();
+    return `/institutions/${institutionId}/content${query ? `?${query}` : ""}`;
+  };
+
+  const syncFiltersToUrl = (semesterId, subjectId) => {
+    const next = new URLSearchParams(searchParams);
+
+    if (semesterId) {
+      next.set("semester", String(semesterId));
+    } else {
+      next.delete("semester");
+    }
+
+    if (subjectId) {
+      next.set("subject", String(subjectId));
+    } else {
+      next.delete("subject");
+    }
+
+    if (next.toString() !== searchParams.toString()) {
+      setSearchParams(next, { replace: true });
+    }
+  };
+
   useEffect(() => {
     const initialize = async () => {
       setIsInitializing(true);
+      setIsNotesLoading(true);
       try {
         if (institutions.length === 0) {
           await fetchInstitutions();
         }
 
-        const loadedSemesters = await fetchSemesters(institutionId);
+        const [loadedSemesters, loadedSubjects] = await Promise.all([
+          fetchSemesters(institutionId),
+          fetchSubjects({ institutionId }),
+          fetchNotes({ institutionId, limit: 1000 }),
+        ]);
+
         const semesterFromQuery = searchParams.get("semester");
         const firstSemester =
           loadedSemesters?.find(
@@ -124,6 +196,7 @@ export default function InstitutionContent() {
         if (!firstSemester) {
           setSelectedSemesterId("");
           setSelectedSubjectId("");
+          syncFiltersToUrl("", "");
           setIsInitializing(false);
           return;
         }
@@ -131,64 +204,68 @@ export default function InstitutionContent() {
         const semesterId = firstSemester._id;
         setSelectedSemesterId(semesterId);
 
-        const loadedSubjects = await fetchSubjects(semesterId);
+        const subjectsForSemester = (loadedSubjects || []).filter(
+          (subject) =>
+            String(subject.semester?._id || subject.semester) ===
+            String(semesterId),
+        );
         const subjectFromQuery = searchParams.get("subject");
         const firstSubject =
-          loadedSubjects?.find(
+          subjectsForSemester.find(
             (subject) => String(subject._id) === String(subjectFromQuery),
-          ) || loadedSubjects?.[0];
+          ) || subjectsForSemester[0];
 
         if (firstSubject) {
           setSelectedSubjectId(firstSubject._id);
-          await fetchNotes({ subjectId: firstSubject._id });
+          syncFiltersToUrl(semesterId, firstSubject._id);
         } else {
           setSelectedSubjectId("");
+          syncFiltersToUrl(semesterId, "");
         }
       } catch (error) {
         toast.error("Failed to load institution content");
       } finally {
+        setIsNotesLoading(false);
         setIsInitializing(false);
       }
     };
 
     initialize();
-  }, [institutionId, searchParams]);
+  }, [institutionId]);
 
-  const handleSemesterChange = async (semesterId) => {
+  const handleSemesterChange = (semesterId) => {
     setSelectedSemesterId(semesterId);
     setSelectedSubjectId("");
 
     if (!semesterId) {
+      syncFiltersToUrl("", "");
       return;
     }
 
-    try {
-      const loadedSubjects = await fetchSubjects(semesterId);
-      const firstSubject = loadedSubjects?.[0];
+    const subjectsForSemester = subjects.filter(
+      (subject) =>
+        String(subject.semester?._id || subject.semester) === String(semesterId),
+    );
+    const firstSubject = subjectsForSemester[0];
 
-      if (firstSubject) {
-        setSelectedSubjectId(firstSubject._id);
-        await fetchNotes({ subjectId: firstSubject._id });
-      } else {
-        setSelectedSubjectId("");
-      }
-    } catch (error) {
-      toast.error("Failed to load subjects");
+    if (firstSubject) {
+      setSelectedSubjectId(firstSubject._id);
+      syncFiltersToUrl(semesterId, firstSubject._id);
+    } else {
+      setSelectedSubjectId("");
+      syncFiltersToUrl(semesterId, "");
     }
   };
 
-  const handleSubjectChange = async (subjectId) => {
+  const handleSubjectChange = (subjectId) => {
     setSelectedSubjectId(subjectId);
 
     if (!subjectId) {
+      syncFiltersToUrl(selectedSemesterId, "");
       return;
     }
 
-    try {
-      await fetchNotes({ subjectId });
-    } catch (error) {
-      toast.error("Failed to load notes");
-    }
+    syncFiltersToUrl(selectedSemesterId, subjectId);
   };
 
   const handleCreateNote = async (e) => {
@@ -207,11 +284,48 @@ export default function InstitutionContent() {
       setModalOpen(false);
       setNewNoteTitle("");
       toast.success("Note created");
-      navigate(`/notes/${note._id}`);
+      navigate(`/notes/${note._id}`, {
+        state: {
+          returnTo: buildContentPath(selectedSemesterId, selectedSubjectId),
+        },
+      });
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to create note");
     }
   };
+
+  const handleDownloadNote = async (event, noteId) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!noteId || downloadingNoteId) return;
+
+    setDownloadingNoteId(noteId);
+    try {
+      const fullNote = await fetchNoteForDownload(noteId);
+      await downloadNoteAsPdf(fullNote);
+      toast.success("PDF downloaded");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to download note");
+    } finally {
+      setDownloadingNoteId(null);
+    }
+  };
+
+  const handleDeleteNote = async () => {
+    try {
+      await deleteNote(deleteConfirm._id);
+      toast.success("Note deleted");
+      setDeleteConfirm(null);
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Delete failed");
+    }
+  };
+
+  const selectedContentPath = buildContentPath(
+    selectedSemesterId,
+    selectedSubjectId,
+  );
 
   const handleCreateSemester = async (e) => {
     e.preventDefault();
@@ -221,17 +335,9 @@ export default function InstitutionContent() {
         ...semesterForm,
         institutionId,
       });
-      await fetchSemesters(institutionId);
       setSelectedSemesterId(createdSemester._id);
-
-      const loadedSubjects = await fetchSubjects(createdSemester._id);
-      const firstSubject = loadedSubjects?.[0];
-      if (firstSubject) {
-        setSelectedSubjectId(firstSubject._id);
-        await fetchNotes({ subjectId: firstSubject._id });
-      } else {
-        setSelectedSubjectId("");
-      }
+      setSelectedSubjectId("");
+      syncFiltersToUrl(createdSemester._id, "");
 
       setSemesterModalOpen(false);
       setSemesterForm({ name: "", type: "semester", description: "" });
@@ -254,15 +360,73 @@ export default function InstitutionContent() {
         ...subjectForm,
         semesterId: selectedSemesterId,
       });
-      await fetchSubjects(selectedSemesterId);
       setSelectedSubjectId(createdSubject._id);
-      await fetchNotes({ subjectId: createdSubject._id });
+      syncFiltersToUrl(selectedSemesterId, createdSubject._id);
 
       setSubjectModalOpen(false);
       setSubjectForm({ name: "", code: "", description: "", instructor: "" });
       toast.success("Subject added");
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to create subject");
+    }
+  };
+
+  const openEditSemesterModal = () => {
+    const sem = institutionSemesters.find((s) => String(s._id) === String(selectedSemesterId));
+    if (sem) {
+      setEditSemesterForm({
+        name: sem.name,
+        type: sem.type || "semester",
+        description: sem.description || "",
+      });
+      setEditSemesterModalOpen(true);
+    }
+  };
+
+  const openEditSubjectModal = () => {
+    const sub = semesterSubjects.find((s) => String(s._id) === String(selectedSubjectId));
+    if (sub) {
+      setEditSubjectForm({
+        name: sub.name,
+        code: sub.code || "",
+        description: sub.description || "",
+        instructor: sub.instructor || "",
+      });
+      setEditSubjectModalOpen(true);
+    }
+  };
+
+  const handleUpdateSemester = async (e) => {
+    e.preventDefault();
+    try {
+      await updateSemester(selectedSemesterId, editSemesterForm);
+      setEditSemesterModalOpen(false);
+      toast.success("Semester updated");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to update semester");
+    }
+  };
+
+  const handleUpdateSubject = async (e) => {
+    e.preventDefault();
+    try {
+      await updateSubject(selectedSubjectId, editSubjectForm);
+      setEditSubjectModalOpen(false);
+      toast.success("Subject updated");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to update subject");
+    }
+  };
+
+  const handleUpdateNote = async (e) => {
+    e.preventDefault();
+    if (!selectedNoteForEdit) return;
+    try {
+      await updateNote(selectedNoteForEdit._id, editNoteForm);
+      setEditNoteModalOpen(false);
+      toast.success("Note updated");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to update note");
     }
   };
 
@@ -280,15 +444,15 @@ export default function InstitutionContent() {
         <div className="flex items-center space-x-3 flex-1">
           <Link
             to="/institutions"
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="icon-btn p-2 transition-colors"
           >
             <ArrowBackIcon />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <h1 className="text-2xl font-bold" style={{ color: "var(--color-text)" }}>
               {institution?.name || "Institution"}
             </h1>
-            <p className="text-gray-600 dark:text-gray-400">
+            <p style={{ color: "var(--color-text-muted)" }}>
               Pick a semester and subject to jump to notes quickly.
             </p>
           </div>
@@ -324,40 +488,62 @@ export default function InstitutionContent() {
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium mb-2" style={{ color: "var(--color-text-secondary)" }}>
               Semester
             </label>
-            <select
-              value={selectedSemesterId}
-              onChange={(e) => handleSemesterChange(e.target.value)}
-              className="input-field"
-            >
-              <option value="">Select semester</option>
-              {institutionSemesters.map((semester) => (
-                <option key={semester._id} value={semester._id}>
-                  {semester.name}
-                </option>
-              ))}
-            </select>
+            <div className="flex items-center gap-2">
+              <select
+                value={selectedSemesterId}
+                onChange={(e) => handleSemesterChange(e.target.value)}
+                className="input-field flex-1"
+              >
+                <option value="">Select semester</option>
+                {institutionSemesters.map((semester) => (
+                  <option key={semester._id} value={semester._id}>
+                    {semester.name}
+                  </option>
+                ))}
+              </select>
+              {selectedSemesterId && (
+                <button
+                  onClick={openEditSemesterModal}
+                  className="icon-btn p-2"
+                  title="Edit semester"
+                >
+                  <EditIcon fontSize="small" className="text-gray-400 hover:text-primary-400" />
+                </button>
+              )}
+            </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium mb-2" style={{ color: "var(--color-text-secondary)" }}>
               Subject
             </label>
-            <select
-              value={selectedSubjectId}
-              onChange={(e) => handleSubjectChange(e.target.value)}
-              className="input-field"
-              disabled={!selectedSemesterId || semesterSubjects.length === 0}
-            >
-              <option value="">Select subject</option>
-              {semesterSubjects.map((subject) => (
-                <option key={subject._id} value={subject._id}>
-                  {subject.name}
-                </option>
-              ))}
-            </select>
+            <div className="flex items-center gap-2">
+              <select
+                value={selectedSubjectId}
+                onChange={(e) => handleSubjectChange(e.target.value)}
+                className="input-field flex-1"
+                disabled={!selectedSemesterId || semesterSubjects.length === 0}
+              >
+                <option value="">Select subject</option>
+                {semesterSubjects.map((subject) => (
+                  <option key={subject._id} value={subject._id}>
+                    {subject.name}
+                  </option>
+                ))}
+              </select>
+              {selectedSubjectId && (
+                <button
+                  onClick={openEditSubjectModal}
+                  className="icon-btn p-2"
+                  title="Edit subject"
+                >
+                  <EditIcon fontSize="small" className="text-gray-400 hover:text-primary-400" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -373,52 +559,189 @@ export default function InstitutionContent() {
         </div>
       </motion.div>
 
-      {isLoading ? (
+      {isNotesLoading ? (
         <div className="flex items-center justify-center h-56">
           <div className="spinner" />
         </div>
       ) : filteredNotes.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filteredNotes.map((note) => (
-            <Link
+            <div
               key={note._id}
-              to={`/notes/${note._id}`}
-              className="card hover:shadow-lg transition-shadow"
+              className="card group relative hover:shadow-lg transition-shadow"
             >
-              <div
-                className="w-10 h-10 rounded-lg flex items-center justify-center mb-3"
-                style={{ backgroundColor: note.subject?.color || "#667eea" }}
-              >
-                <NoteIcon className="text-white" fontSize="small" />
+              <div className="absolute top-4 right-4 flex items-center space-x-1">
+                {note.isPinned && (
+                  <PushPinIcon fontSize="small" className="text-primary-500" />
+                )}
+                {note.isFavorite && (
+                  <StarIcon fontSize="small" className="text-yellow-500" />
+                )}
               </div>
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100 line-clamp-2 mb-2">
-                {note.title}
-              </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {note.subject?.name}
-              </p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-                Updated {format(new Date(note.updatedAt), "MMM d, yyyy")}
-              </p>
-            </Link>
+              <Link
+                to={`/notes/${note._id}`}
+                state={{ returnTo: selectedContentPath }}
+                className="block"
+              >
+                <div
+                  className="w-10 h-10 rounded-lg flex items-center justify-center mb-3"
+                  style={{ backgroundColor: note.subject?.color || "#667eea" }}
+                >
+                  <NoteIcon className="text-white" fontSize="small" />
+                </div>
+                <h3 className="font-semibold text-white line-clamp-2 mb-2">
+                  {note.title}
+                </h3>
+                <p className="text-sm text-gray-400">
+                  {note.subject?.name}
+                </p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+                  Updated {format(new Date(note.updatedAt), "MMM d, yyyy")}
+                </p>
+              </Link>
+              <div className="absolute bottom-4 right-4 flex space-x-1">
+                <button
+                  type="button"
+                  onClick={(event) => handleDownloadNote(event, note._id)}
+                  disabled={downloadingNoteId === note._id}
+                  className="icon-btn p-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Download note"
+                >
+                  <DownloadIcon fontSize="small" className="text-gray-400" />
+                </button>
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setSelectedNoteForEdit(note);
+                    setEditNoteForm({ title: note.title || "", description: note.description || "" });
+                    setEditNoteModalOpen(true);
+                  }}
+                  className="icon-btn p-2 rounded-lg"
+                  title="Edit note details"
+                >
+                  <EditIcon fontSize="small" className="text-gray-400" />
+                </button>
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setDeleteConfirm(note);
+                  }}
+                  className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
+                  title="Delete note"
+                >
+                  <DeleteIcon fontSize="small" className="text-red-500" />
+                </button>
+              </div>
+            </div>
           ))}
         </div>
       ) : (
         <div className="card text-center py-14">
           <NoteIcon
-            className="text-gray-300 dark:text-gray-600 mb-4"
+            className="text-gray-600 mb-4"
             style={{ fontSize: 56 }}
           />
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+          <h3 className="text-xl font-semibold text-white mb-2">
             No notes found
           </h3>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-gray-400">
             {selectedSubjectId
               ? "Create your first note for this subject."
               : "Select a subject to view notes."}
           </p>
         </div>
       )}
+
+      <Dialog
+        open={!!deleteConfirm}
+        onClose={() => setDeleteConfirm(null)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <div className="p-6 text-center">
+          <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+            <DeleteIcon className="text-red-600" fontSize="large" />
+          </div>
+          <h3 className="text-lg font-semibold text-white mb-2">
+            Delete Note?
+          </h3>
+          <p className="text-gray-400 mb-6">
+            &quot;{deleteConfirm?.title}&quot; will be moved to archive.
+          </p>
+          <div className="flex justify-center gap-3">
+            <button
+              onClick={() => setDeleteConfirm(null)}
+              className="btn-secondary"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDeleteNote}
+              className="bg-red-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-red-700 transition-colors"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </Dialog>
+
+      <Dialog
+        open={editNoteModalOpen}
+        onClose={() => setEditNoteModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Edit Note Details</h2>
+            <button
+              onClick={() => setEditNoteModalOpen(false)}
+              className="icon-btn p-2"
+            >
+              <CloseIcon />
+            </button>
+          </div>
+          <form onSubmit={handleUpdateNote} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Title</label>
+              <input
+                type="text"
+                value={editNoteForm.title}
+                onChange={(e) => setEditNoteForm({ ...editNoteForm, title: e.target.value })}
+                className="input-field"
+                placeholder="Note Title"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Description (Optional)</label>
+              <textarea
+                value={editNoteForm.description}
+                onChange={(e) => setEditNoteForm({ ...editNoteForm, description: e.target.value })}
+                className="input-field resize-none"
+                rows={3}
+                placeholder="Brief description"
+              />
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setEditNoteModalOpen(false)}
+                className="btn-secondary"
+              >
+                Cancel
+              </button>
+              <button type="submit" className="btn-primary">
+                Save Changes
+              </button>
+            </div>
+          </form>
+        </div>
+      </Dialog>
 
       <Dialog
         open={modalOpen}
@@ -431,7 +754,7 @@ export default function InstitutionContent() {
             <h2 className="text-xl font-semibold">Create New Note</h2>
             <button
               onClick={() => setModalOpen(false)}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="icon-btn p-2"
             >
               <CloseIcon />
             </button>
@@ -472,7 +795,7 @@ export default function InstitutionContent() {
             <h2 className="text-xl font-semibold">Add Semester</h2>
             <button
               onClick={() => setSemesterModalOpen(false)}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="icon-btn p-2"
             >
               <CloseIcon />
             </button>
@@ -480,7 +803,7 @@ export default function InstitutionContent() {
 
           <form onSubmit={handleCreateSemester} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Name
               </label>
               <input
@@ -496,7 +819,7 @@ export default function InstitutionContent() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Type
               </label>
               <select
@@ -515,7 +838,7 @@ export default function InstitutionContent() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Description (Optional)
               </label>
               <textarea
@@ -558,7 +881,7 @@ export default function InstitutionContent() {
             <h2 className="text-xl font-semibold">Add Subject</h2>
             <button
               onClick={() => setSubjectModalOpen(false)}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="icon-btn p-2"
             >
               <CloseIcon />
             </button>
@@ -566,7 +889,7 @@ export default function InstitutionContent() {
 
           <form onSubmit={handleCreateSubject} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Subject Name
               </label>
               <input
@@ -583,7 +906,7 @@ export default function InstitutionContent() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Code (Optional)
                 </label>
                 <input
@@ -600,7 +923,7 @@ export default function InstitutionContent() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Instructor (Optional)
                 </label>
                 <input
@@ -619,7 +942,7 @@ export default function InstitutionContent() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Description (Optional)
               </label>
               <textarea
@@ -645,6 +968,194 @@ export default function InstitutionContent() {
               </button>
               <button type="submit" className="btn-primary">
                 Add Subject
+              </button>
+            </div>
+          </form>
+        </div>
+      </Dialog>
+
+      {/* Edit Semester Modal */}
+      <Dialog
+        open={editSemesterModalOpen}
+        onClose={() => setEditSemesterModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Edit Semester</h2>
+            <button
+              onClick={() => setEditSemesterModalOpen(false)}
+              className="icon-btn p-2"
+            >
+              <CloseIcon />
+            </button>
+          </div>
+
+          <form onSubmit={handleUpdateSemester} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Name
+              </label>
+              <input
+                type="text"
+                value={editSemesterForm.name}
+                onChange={(e) =>
+                  setEditSemesterForm((prev) => ({ ...prev, name: e.target.value }))
+                }
+                className="input-field"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Type
+              </label>
+              <select
+                value={editSemesterForm.type}
+                onChange={(e) =>
+                  setEditSemesterForm((prev) => ({ ...prev, type: e.target.value }))
+                }
+                className="input-field"
+              >
+                {semesterTypes.map((typeOption) => (
+                  <option key={typeOption.value} value={typeOption.value}>
+                    {typeOption.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Description (Optional)
+              </label>
+              <textarea
+                value={editSemesterForm.description}
+                onChange={(e) =>
+                  setEditSemesterForm((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
+                className="input-field resize-none"
+                rows={3}
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setEditSemesterModalOpen(false)}
+                className="btn-secondary"
+              >
+                Cancel
+              </button>
+              <button type="submit" className="btn-primary">
+                Save Changes
+              </button>
+            </div>
+          </form>
+        </div>
+      </Dialog>
+
+      {/* Edit Subject Modal */}
+      <Dialog
+        open={editSubjectModalOpen}
+        onClose={() => setEditSubjectModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Edit Subject</h2>
+            <button
+              onClick={() => setEditSubjectModalOpen(false)}
+              className="icon-btn p-2"
+            >
+              <CloseIcon />
+            </button>
+          </div>
+
+          <form onSubmit={handleUpdateSubject} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Subject Name
+              </label>
+              <input
+                type="text"
+                value={editSubjectForm.name}
+                onChange={(e) =>
+                  setEditSubjectForm((prev) => ({ ...prev, name: e.target.value }))
+                }
+                className="input-field"
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Code (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={editSubjectForm.code}
+                  onChange={(e) =>
+                    setEditSubjectForm((prev) => ({
+                      ...prev,
+                      code: e.target.value,
+                    }))
+                  }
+                  className="input-field"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Instructor (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={editSubjectForm.instructor}
+                  onChange={(e) =>
+                    setEditSubjectForm((prev) => ({
+                      ...prev,
+                      instructor: e.target.value,
+                    }))
+                  }
+                  className="input-field"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Description (Optional)
+              </label>
+              <textarea
+                value={editSubjectForm.description}
+                onChange={(e) =>
+                  setEditSubjectForm((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
+                className="input-field resize-none"
+                rows={3}
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setEditSubjectModalOpen(false)}
+                className="btn-secondary"
+              >
+                Cancel
+              </button>
+              <button type="submit" className="btn-primary">
+                Save Changes
               </button>
             </div>
           </form>

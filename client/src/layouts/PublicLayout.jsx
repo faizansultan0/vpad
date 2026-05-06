@@ -1,9 +1,9 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { useAuthStore } from "../store";
+import { useAuthStore, useThemeStore } from "../store";
 import { motion } from "framer-motion";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 
 const navLinks = [
   { path: "/", label: "Home" },
@@ -16,20 +16,29 @@ export default function PublicLayout() {
   const { isAuthenticated } = useAuthStore();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const forceResolved = useThemeStore((s) => s.forceResolved);
+  const restoreResolved = useThemeStore((s) => s.restoreResolved);
 
+  // Public pages are always dark regardless of theme preference
   useEffect(() => {
-    document.documentElement.classList.remove("dark");
-  }, []);
+    forceResolved("dark");
+    return () => restoreResolved();
+  }, [forceResolved, restoreResolved]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 text-gray-900">
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-100">
+    <div className="min-h-screen flex flex-col text-gray-100">
+      {/* ── Navbar ── */}
+      <header className="fixed top-0 left-0 right-0 w-full z-50 shimmer-line" style={{ transform: "translateZ(0)", background: "rgba(10, 1, 24, 0.5)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <Link to="/" className="flex items-center space-x-2">
-              <div className="w-10 h-10 rounded-xl gradient-bg flex items-center justify-center">
+            <Link to="/" className="flex items-center space-x-2 group">
+              <motion.div
+                className="w-10 h-10 rounded-xl gradient-bg flex items-center justify-center shadow-glow"
+                whileHover={{ scale: 1.05, rotate: 5 }}
+                transition={{ type: "spring", stiffness: 400 }}
+              >
                 <span className="text-white font-bold text-xl">V</span>
-              </div>
+              </motion.div>
               <span className="text-xl font-bold gradient-text">VPad</span>
             </Link>
 
@@ -38,31 +47,40 @@ export default function PublicLayout() {
                 <Link
                   key={link.path}
                   to={link.path}
-                  className={`text-sm font-medium transition-colors ${
+                  className={`relative inline-flex items-center justify-center text-sm font-medium transition-colors ${
                     location.pathname === link.path
-                      ? "text-primary-600"
-                      : "text-gray-600 hover:text-primary-600"
+                      ? "text-primary-400"
+                      : "text-gray-400 hover:text-primary-300"
                   }`}
                 >
-                  {link.label}
+                  <span className="relative">
+                    {link.label}
+                    {location.pathname === link.path && (
+                      <motion.div
+                        layoutId="nav-indicator"
+                        className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary-400"
+                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                      />
+                    )}
+                  </span>
                 </Link>
               ))}
             </div>
 
             <div className="hidden md:flex items-center space-x-4">
               {isAuthenticated ? (
-                <Link to="/dashboard" className="btn-primary text-sm">
+                <Link to="/dashboard" className="btn-primary btn-glow text-sm">
                   Dashboard
                 </Link>
               ) : (
                 <>
                   <Link
                     to="/login"
-                    className="text-sm font-medium text-gray-600 hover:text-primary-600 transition-colors"
+                    className="text-sm font-medium text-gray-400 hover:text-primary-300 transition-colors"
                   >
                     Sign In
                   </Link>
-                  <Link to="/register" className="btn-primary text-sm">
+                  <Link to="/register" className="btn-primary btn-glow text-sm">
                     Get Started
                   </Link>
                 </>
@@ -70,7 +88,7 @@ export default function PublicLayout() {
             </div>
 
             <button
-              className="md:hidden p-2 text-gray-600"
+              className="md:hidden p-2 text-gray-400 hover:text-white transition-colors"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               {mobileMenuOpen ? <CloseIcon /> : <MenuIcon />}
@@ -83,7 +101,8 @@ export default function PublicLayout() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="md:hidden bg-white border-t border-gray-100 py-4"
+            className="md:hidden py-4"
+            style={{ background: "rgba(10, 1, 24, 0.95)", backdropFilter: "blur(20px)", borderTop: "1px solid rgba(255,255,255,0.06)" }}
           >
             <div className="px-4 space-y-3">
               {navLinks.map((link) => (
@@ -91,16 +110,16 @@ export default function PublicLayout() {
                   key={link.path}
                   to={link.path}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`block py-2 text-sm font-medium ${
+                  className={`block py-2 text-sm font-medium transition-colors ${
                     location.pathname === link.path
-                      ? "text-primary-600"
-                      : "text-gray-600"
+                      ? "text-primary-400"
+                      : "text-gray-400"
                   }`}
                 >
                   {link.label}
                 </Link>
               ))}
-              <div className="pt-4 border-t border-gray-100 space-y-3">
+              <div className="pt-4 space-y-3" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
                 {isAuthenticated ? (
                   <Link
                     to="/dashboard"
@@ -114,7 +133,7 @@ export default function PublicLayout() {
                     <Link
                       to="/login"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="block py-2 text-sm font-medium text-gray-600"
+                      className="block py-2 text-sm font-medium text-gray-400"
                     >
                       Sign In
                     </Link>
@@ -137,30 +156,33 @@ export default function PublicLayout() {
         <Outlet />
       </main>
 
-      <footer className="bg-gray-900 text-white">
+      {/* ── Footer ── */}
+      <footer className="relative" style={{ background: "rgba(5, 0, 15, 0.8)", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary-500/40 to-transparent" />
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="col-span-1 md:col-span-2">
               <div className="flex items-center space-x-2 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl gradient-bg flex items-center justify-center shadow-glow">
                   <span className="text-white font-bold text-xl">V</span>
                 </div>
-                <span className="text-xl font-bold">VPad</span>
+                <span className="text-xl font-bold text-white">VPad</span>
               </div>
-              <p className="text-gray-400 text-sm max-w-md">
+              <p className="text-gray-500 text-sm max-w-md">
                 VPad is a student-oriented notes management application that
                 helps you organize, write, share, and collaboratively edit your
                 academic notes.
               </p>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Quick Links</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
+              <h4 className="font-semibold text-gray-200 mb-4">Quick Links</h4>
+              <ul className="space-y-2 text-sm text-gray-500">
                 {navLinks.map((link) => (
                   <li key={link.path}>
                     <Link
                       to={link.path}
-                      className="hover:text-white transition-colors"
+                      className="hover:text-primary-400 transition-colors"
                     >
                       {link.label}
                     </Link>
@@ -169,28 +191,22 @@ export default function PublicLayout() {
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Legal</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
+              <h4 className="font-semibold text-gray-200 mb-4">Legal</h4>
+              <ul className="space-y-2 text-sm text-gray-500">
                 <li>
-                  <Link
-                    to="/privacy"
-                    className="hover:text-white transition-colors"
-                  >
+                  <Link to="/privacy" className="hover:text-primary-400 transition-colors">
                     Privacy Policy
                   </Link>
                 </li>
                 <li>
-                  <Link
-                    to="/terms"
-                    className="hover:text-white transition-colors"
-                  >
+                  <Link to="/terms" className="hover:text-primary-400 transition-colors">
                     Terms of Service
                   </Link>
                 </li>
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-400">
+          <div className="mt-8 pt-8 text-center text-sm text-gray-600" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
             <p>© {new Date().getFullYear()} VPad. All rights reserved.</p>
           </div>
         </div>

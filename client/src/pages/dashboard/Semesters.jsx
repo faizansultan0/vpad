@@ -185,7 +185,7 @@ export default function Semesters() {
                 <Link
                   to={`/institutions/${institutionId}/content?semester=${sem._id}`}
                 >
-                  <h3 className="text-lg font-semibold text-gray-900 hover:text-primary-600 transition-colors">
+                  <h3 className="text-lg font-semibold text-white hover:text-primary-400 transition-colors">
                     {sem.name}
                   </h3>
                   <p className="text-sm text-gray-500 capitalize mb-2">

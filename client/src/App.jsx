@@ -25,10 +25,14 @@ import InstitutionContent from "./pages/dashboard/InstitutionContent";
 import Semesters from "./pages/dashboard/Semesters";
 import Subjects from "./pages/dashboard/Subjects";
 import Notes from "./pages/dashboard/Notes";
-import NoteEditor from "./pages/dashboard/NoteEditor";
+import { lazy, Suspense } from "react";
+const NoteEditor = lazy(() => import("./pages/dashboard/NoteEditor"));
 import SharedNotes from "./pages/dashboard/SharedNotes";
 import Profile from "./pages/dashboard/Profile";
 import Notifications from "./pages/dashboard/Notifications";
+
+import ParticleBackground from "./components/ui/ParticleBackground";
+import ScrollToTop from "./components/ui/ScrollToTop";
 
 function App() {
   const { isAuthenticated, accessToken, getMe } = useAuthStore();
@@ -57,8 +61,12 @@ function App() {
   }, [isAuthenticated, accessToken]);
 
   return (
-    <Routes>
-      <Route element={<PublicLayout />}>
+    <>
+      <ScrollToTop />
+      <ParticleBackground />
+      <div className="relative z-10">
+        <Routes>
+        <Route element={<PublicLayout />}>
         <Route path="/" element={<Home />} />
         <Route path="/services" element={<Services />} />
         <Route path="/about" element={<About />} />
@@ -100,7 +108,11 @@ function App() {
         />
         <Route path="/semesters/:semesterId/subjects" element={<Subjects />} />
         <Route path="/subjects/:subjectId/notes" element={<Notes />} />
-        <Route path="/notes/:noteId" element={<NoteEditor />} />
+        <Route path="/notes/:noteId" element={
+          <Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="spinner" /></div>}>
+            <NoteEditor />
+          </Suspense>
+        } />
         <Route path="/shared" element={<SharedNotes />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/notifications" element={<Notifications />} />
@@ -108,6 +120,8 @@ function App() {
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+      </div>
+    </>
   );
 }
 
