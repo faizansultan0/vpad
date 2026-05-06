@@ -67,10 +67,12 @@ const createComment = asyncHandler(async (req, res) => {
 
   const io = req.app.get("io");
 
-  io.to(`note:${noteId}`).emit("newComment", {
-    noteId,
-    comment,
-  });
+  if (io) {
+    io.to(`note:${noteId}`).emit("newComment", {
+      noteId,
+      comment,
+    });
+  }
 
   const participants = new Set();
   participants.add(note.user.toString());
@@ -189,10 +191,12 @@ const updateComment = asyncHandler(async (req, res) => {
   await comment.populate("user", "name profilePicture");
 
   const io = req.app.get("io");
-  io.to(`note:${comment.note}`).emit("commentUpdated", {
-    noteId: comment.note,
-    comment,
-  });
+  if (io) {
+    io.to(`note:${comment.note}`).emit("commentUpdated", {
+      noteId: comment.note,
+      comment,
+    });
+  }
 
   res.json({
     success: true,
@@ -222,10 +226,12 @@ const deleteComment = asyncHandler(async (req, res) => {
   await comment.save();
 
   const io = req.app.get("io");
-  io.to(`note:${comment.note}`).emit("commentDeleted", {
-    noteId: comment.note,
-    commentId: comment._id,
-  });
+  if (io) {
+    io.to(`note:${comment.note}`).emit("commentDeleted", {
+      noteId: comment.note,
+      commentId: comment._id,
+    });
+  }
 
   res.json({
     success: true,
@@ -260,11 +266,13 @@ const addReaction = asyncHandler(async (req, res) => {
   await comment.save();
 
   const io = req.app.get("io");
-  io.to(`note:${comment.note}`).emit("commentReaction", {
-    noteId: comment.note,
-    commentId: comment._id,
-    reactions: comment.reactions,
-  });
+  if (io) {
+    io.to(`note:${comment.note}`).emit("commentReaction", {
+      noteId: comment.note,
+      commentId: comment._id,
+      reactions: comment.reactions,
+    });
+  }
 
   res.json({
     success: true,

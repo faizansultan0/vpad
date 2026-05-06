@@ -234,15 +234,17 @@ const updateNote = asyncHandler(async (req, res) => {
   await note.save();
 
   const io = req.app.get("io");
-  io.to(`note:${note._id}`).emit("noteUpdated", {
-    noteId: note._id,
-    updates,
-    editedBy: {
-      _id: req.user._id,
-      name: req.user.name,
-      profilePicture: req.user.profilePicture,
-    },
-  });
+  if (io) {
+    io.to(`note:${note._id}`).emit("noteUpdated", {
+      noteId: note._id,
+      updates,
+      editedBy: {
+        _id: req.user._id,
+        name: req.user.name,
+        profilePicture: req.user.profilePicture,
+      },
+    });
+  }
 
   res.json({
     success: true,
