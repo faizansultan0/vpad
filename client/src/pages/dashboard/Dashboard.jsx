@@ -114,7 +114,8 @@ export default function Dashboard() {
                     <AnimatedCounter
                       value={stat.value}
                       duration={1.5}
-                      className="text-3xl font-bold text-white mt-1 block"
+                      className="text-3xl font-bold mt-1 block"
+                      style={{ color: "var(--color-text)" }}
                     />
                   </div>
                   <motion.div
@@ -140,7 +141,7 @@ export default function Dashboard() {
           className="glass-card"
         >
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-white">
+            <h2 className="text-lg font-semibold" style={{ color: "var(--color-text)" }}>
               Quick Actions
             </h2>
           </div>
@@ -161,9 +162,9 @@ export default function Dashboard() {
                   <Link
                     to={action.to}
                     className="flex items-center space-x-3 p-4 rounded-xl transition-all duration-200 group border border-transparent hover:border-primary-500/20"
-                    style={{ background: "rgba(15, 10, 40, 0.4)" }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = "rgba(139, 92, 246, 0.06)"}
-                    onMouseLeave={(e) => e.currentTarget.style.background = "rgba(15, 10, 40, 0.4)"}
+                    style={{ background: "var(--color-action-card-bg)" }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = "var(--color-action-card-hover)"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = "var(--color-action-card-bg)"}
                   >
                     <motion.div
                       className={`w-10 h-10 rounded-lg ${action.gradient} flex items-center justify-center shadow-sm`}
@@ -173,7 +174,7 @@ export default function Dashboard() {
                       <ActionIcon className="text-white" />
                     </motion.div>
                     <div>
-                      <p className="font-medium text-white text-sm">
+                      <p className="font-medium text-sm" style={{ color: "var(--color-text)" }}>
                         {action.label}
                       </p>
                       <p className="text-xs text-gray-400">
@@ -194,7 +195,7 @@ export default function Dashboard() {
           className="glass-card"
         >
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-white">
+            <h2 className="text-lg font-semibold" style={{ color: "var(--color-text)" }}>
               Recent Notes
             </h2>
             <Link
@@ -217,7 +218,7 @@ export default function Dashboard() {
                     to={`/notes/${note._id}`}
                     className="flex items-center space-x-3 p-3 rounded-xl transition-all duration-200 group border border-transparent hover:border-primary-500/10"
                     style={{ background: "transparent" }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = "rgba(139, 92, 246, 0.06)"}
+                    onMouseEnter={(e) => e.currentTarget.style.background = "var(--color-action-card-hover)"}
                     onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
                   >
                     <div
@@ -229,7 +230,7 @@ export default function Dashboard() {
                       <NoteIcon className="text-white" fontSize="small" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-white truncate group-hover:text-primary-400 transition-colors">
+                      <p className="font-medium truncate group-hover:text-primary-400 transition-colors" style={{ color: "var(--color-text)" }}>
                         {note.title}
                       </p>
                       <p className="text-xs text-gray-400">
@@ -261,7 +262,7 @@ export default function Dashboard() {
         className="glass-card"
       >
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-white">
+          <h2 className="text-lg font-semibold" style={{ color: "var(--color-text)" }}>
             Your Institutions
           </h2>
           <Link
@@ -285,9 +286,9 @@ export default function Dashboard() {
                 <Link
                   to={`/institutions/${inst._id}/content`}
                   className="block p-4 rounded-xl border transition-all duration-200"
-                  style={{ background: "rgba(15, 10, 40, 0.4)", borderColor: "rgba(255,255,255,0.06)" }}
+                  style={{ background: "var(--color-institution-card-bg)", borderColor: "var(--color-border)" }}
                   onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(139, 92, 246, 0.3)"; e.currentTarget.style.boxShadow = "0 0 20px rgba(139, 92, 246, 0.1)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)"; e.currentTarget.style.boxShadow = "none"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--color-border)"; e.currentTarget.style.boxShadow = "none"; }}
                 >
                   <div className="flex items-center space-x-3">
                     <motion.div
@@ -299,7 +300,7 @@ export default function Dashboard() {
                       <SchoolIcon className="text-white" />
                     </motion.div>
                     <div>
-                      <p className="font-medium text-white">
+                      <p className="font-medium" style={{ color: "var(--color-text)" }}>
                         {inst.name}
                       </p>
                       <p className="text-xs text-gray-400 capitalize">

@@ -1,9 +1,9 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { useAuthStore } from "../store";
+import { useAuthStore, useThemeStore } from "../store";
 import { motion } from "framer-motion";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const navLinks = [
   { path: "/", label: "Home" },
@@ -16,6 +16,14 @@ export default function PublicLayout() {
   const { isAuthenticated } = useAuthStore();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const forceResolved = useThemeStore((s) => s.forceResolved);
+  const restoreResolved = useThemeStore((s) => s.restoreResolved);
+
+  // Public pages are always dark regardless of theme preference
+  useEffect(() => {
+    forceResolved("dark");
+    return () => restoreResolved();
+  }, [forceResolved, restoreResolved]);
 
   return (
     <div className="min-h-screen flex flex-col text-gray-100">
@@ -39,20 +47,22 @@ export default function PublicLayout() {
                 <Link
                   key={link.path}
                   to={link.path}
-                  className={`relative text-sm font-medium transition-colors ${
+                  className={`relative inline-flex items-center justify-center text-sm font-medium transition-colors ${
                     location.pathname === link.path
                       ? "text-primary-400"
                       : "text-gray-400 hover:text-primary-300"
                   }`}
                 >
-                  {link.label}
-                  {location.pathname === link.path && (
-                    <motion.div
-                      layoutId="nav-indicator"
-                      className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary-400"
-                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                    />
-                  )}
+                  <span className="relative">
+                    {link.label}
+                    {location.pathname === link.path && (
+                      <motion.div
+                        layoutId="nav-indicator"
+                        className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary-400"
+                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                      />
+                    )}
+                  </span>
                 </Link>
               ))}
             </div>

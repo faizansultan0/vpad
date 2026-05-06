@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
-import { useAuthStore, useNotificationStore } from "../store";
+import { useAuthStore, useNotificationStore, useThemeStore } from "../store";
 import { motion, AnimatePresence } from "framer-motion";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import SchoolIcon from "@mui/icons-material/School";
@@ -27,11 +27,11 @@ export default function DashboardLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const initTheme = useThemeStore((s) => s.init);
 
   useEffect(() => {
-    // Force dark mode on html element for any Tailwind dark: prefixes in dashboard pages
-    document.documentElement.classList.add("dark");
-  }, []);
+    initTheme();
+  }, [initTheme]);
 
   const handleLogout = async () => {
     await logout();
@@ -39,24 +39,24 @@ export default function DashboardLayout() {
   };
 
   return (
-    <div className="min-h-screen flex text-gray-100">
+    <div className="min-h-screen flex text-gray-100 dark:text-gray-100">
       {/* ── Sidebar ── */}
       <aside
         className={`fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{
-          background: "rgba(10, 1, 24, 0.85)",
+          background: "var(--sidebar-bg, rgba(10, 1, 24, 0.85))",
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
-          borderRight: "1px solid rgba(255,255,255,0.06)",
+          borderRight: "1px solid var(--color-border, rgba(255,255,255,0.06))",
         }}
       >
         {/* Purple accent line on left edge */}
         <div className="absolute top-0 left-0 bottom-0 w-px bg-gradient-to-b from-primary-500/50 via-primary-400/20 to-transparent" />
 
         <div className="flex flex-col h-full">
-          <div className="flex items-center justify-between p-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <div className="flex items-center justify-between p-4" style={{ borderBottom: "1px solid var(--color-border, rgba(255,255,255,0.06))" }}>
             <Link to="/dashboard" className="flex items-center space-x-2 group">
               <motion.div
                 className="w-10 h-10 rounded-xl gradient-bg flex items-center justify-center shadow-glow"
@@ -92,16 +92,30 @@ export default function DashboardLayout() {
                   key={link.path}
                   to={link.path}
                   onClick={() => setSidebarOpen(false)}
-                  className={`relative flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
-                    isActive
-                      ? "text-primary-300"
-                      : "text-gray-400 hover:text-gray-200"
-                  }`}
+                  className={`relative flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group`}
                   style={
                     isActive
-                      ? { background: "rgba(139, 92, 246, 0.1)", boxShadow: "inset 0 0 20px rgba(139, 92, 246, 0.05)" }
-                      : undefined
+                      ? {
+                          background: "rgba(139, 92, 246, 0.12)",
+                          boxShadow: "inset 0 0 20px rgba(139, 92, 246, 0.05)",
+                          color: "#8b5cf6",
+                        }
+                      : {
+                          color: "var(--color-text-muted)",
+                        }
                   }
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = "var(--color-icon-hover)";
+                      e.currentTarget.style.color = "var(--color-text)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = "";
+                      e.currentTarget.style.color = "var(--color-text-muted)";
+                    }
+                  }}
                 >
                   {/* Active indicator border */}
                   {isActive && (
@@ -124,7 +138,7 @@ export default function DashboardLayout() {
             })}
           </nav>
 
-          <div className="p-4" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+          <div className="p-4" style={{ borderTop: "1px solid var(--color-border, rgba(255,255,255,0.06))" }}>
             <div className="flex items-center space-x-3 mb-4">
               <Avatar
                 src={user?.profilePicture?.url}
@@ -135,10 +149,10 @@ export default function DashboardLayout() {
                 {user?.name?.charAt(0)}
               </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-100 truncate">
+                <p className="text-sm font-medium truncate" style={{ color: "var(--color-text)" }}>
                   {user?.name}
                 </p>
-                <p className="text-xs text-gray-500 truncate">
+                <p className="text-xs truncate" style={{ color: "var(--color-text-muted)" }}>
                   {user?.email}
                 </p>
               </div>
@@ -157,25 +171,27 @@ export default function DashboardLayout() {
         </div>
       </aside>
 
-      {sidebarOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-40 lg:hidden"
-          style={{ background: "rgba(0, 0, 0, 0.6)", backdropFilter: "blur(4px)" }}
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-40 lg:hidden"
+            style={{ background: "rgba(0, 0, 0, 0.6)", backdropFilter: "blur(4px)" }}
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+      </AnimatePresence>
 
       <div className="flex-1 flex flex-col min-w-0">
         <header
           className="sticky top-0 z-30 lg:hidden shimmer-line"
           style={{
-            background: "rgba(10, 1, 24, 0.85)",
+            background: "var(--sidebar-bg, rgba(10, 1, 24, 0.85))",
             backdropFilter: "blur(20px)",
             WebkitBackdropFilter: "blur(20px)",
-            borderBottom: "1px solid rgba(255,255,255,0.06)",
+            borderBottom: "1px solid var(--color-border, rgba(255,255,255,0.06))",
           }}
         >
           <div className="flex items-center justify-between px-4 h-16">
@@ -204,7 +220,7 @@ export default function DashboardLayout() {
           </div>
         </header>
 
-        <main className="flex-1 p-4 lg:p-8 overflow-auto text-gray-100">
+        <main className="flex-1 p-4 lg:p-8 overflow-auto">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
