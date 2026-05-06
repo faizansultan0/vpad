@@ -35,6 +35,12 @@ export default {
         "dark-card": "#1c1242",
         "dark-border": "rgba(255, 255, 255, 0.08)",
         "dark-hover": "rgba(139, 92, 246, 0.12)",
+        /* ── Light theme tokens ── */
+        "light-bg": "#f0ecf7",
+        "light-surface": "#f3eff9",
+        "light-card": "#ffffff",
+        "light-border": "rgba(139, 92, 246, 0.12)",
+        "light-hover": "rgba(139, 92, 246, 0.08)",
       },
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],

@@ -102,7 +102,7 @@ export default function Institutions() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">
+          <h1 className="text-2xl font-bold" style={{ color: "var(--color-text)" }}>
             Institutions
           </h1>
           <p className="text-gray-400">
@@ -143,7 +143,7 @@ export default function Institutions() {
                   <div className="flex space-x-1">
                     <button
                       onClick={() => openModal(inst)}
-                      className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+                      className="icon-btn p-2"
                       title="Rename institution"
                     >
                       <EditIcon
@@ -161,7 +161,7 @@ export default function Institutions() {
                   </div>
                 </div>
                 <Link to={`/institutions/${inst._id}/content`}>
-                  <h3 className="text-lg font-semibold text-white hover:text-primary-600 transition-colors">
+                  <h3 className="text-lg font-semibold hover:text-primary-600 transition-colors" style={{ color: "var(--color-text)" }}>
                     {inst.name}
                   </h3>
                   <p className="text-sm text-gray-400 capitalize mb-2">
@@ -172,7 +172,7 @@ export default function Institutions() {
                       {inst.description}
                     </p>
                   )}
-                  <div className="mt-4 pt-4 border-t border-white/[0.06] flex items-center justify-between text-sm text-gray-400">
+                  <div className="mt-4 pt-4 border-t border-light-border dark:border-white/[0.06] flex items-center justify-between text-sm text-gray-400">
                     <span>{inst.semesterCount || 0} Semesters</span>
                     <span className="text-primary-600">Open →</span>
                   </div>
@@ -184,7 +184,7 @@ export default function Institutions() {
       ) : (
         <div className="card text-center py-16">
           <SchoolIcon className="text-gray-300 mb-4" style={{ fontSize: 64 }} />
-          <h3 className="text-xl font-semibold text-white mb-2">
+          <h3 className="text-xl font-semibold mb-2" style={{ color: "var(--color-text)" }}>
             No Institutions Yet
           </h3>
           <p className="text-gray-400 mb-6">
@@ -212,7 +212,7 @@ export default function Institutions() {
             </h2>
             <button
               onClick={() => setModalOpen(false)}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+              className="icon-btn p-2"
             >
               <CloseIcon />
             </button>

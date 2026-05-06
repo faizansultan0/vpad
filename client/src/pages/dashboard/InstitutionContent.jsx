@@ -49,6 +49,7 @@ export default function InstitutionContent() {
     createSubject,
     updateSemester,
     updateSubject,
+    updateNote,
     fetchNoteForDownload,
     downloadNoteAsPdf,
   } = useNoteStore();
@@ -88,6 +89,9 @@ export default function InstitutionContent() {
     description: "",
     instructor: "",
   });
+  const [editNoteModalOpen, setEditNoteModalOpen] = useState(false);
+  const [selectedNoteForEdit, setSelectedNoteForEdit] = useState(null);
+  const [editNoteForm, setEditNoteForm] = useState({ title: "", description: "" });
 
   const institution = useMemo(
     () => institutions.find((item) => item._id === institutionId),
@@ -414,6 +418,18 @@ export default function InstitutionContent() {
     }
   };
 
+  const handleUpdateNote = async (e) => {
+    e.preventDefault();
+    if (!selectedNoteForEdit) return;
+    try {
+      await updateNote(selectedNoteForEdit._id, editNoteForm);
+      setEditNoteModalOpen(false);
+      toast.success("Note updated");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to update note");
+    }
+  };
+
   if (isInitializing) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -428,15 +444,15 @@ export default function InstitutionContent() {
         <div className="flex items-center space-x-3 flex-1">
           <Link
             to="/institutions"
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="icon-btn p-2 transition-colors"
           >
             <ArrowBackIcon />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-white">
+            <h1 className="text-2xl font-bold" style={{ color: "var(--color-text)" }}>
               {institution?.name || "Institution"}
             </h1>
-            <p className="text-gray-400">
+            <p style={{ color: "var(--color-text-muted)" }}>
               Pick a semester and subject to jump to notes quickly.
             </p>
           </div>
@@ -472,7 +488,7 @@ export default function InstitutionContent() {
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium mb-2" style={{ color: "var(--color-text-secondary)" }}>
               Semester
             </label>
             <div className="flex items-center gap-2">
@@ -491,7 +507,7 @@ export default function InstitutionContent() {
               {selectedSemesterId && (
                 <button
                   onClick={openEditSemesterModal}
-                  className="p-2 rounded-lg hover:bg-dark-hover transition-colors"
+                  className="icon-btn p-2"
                   title="Edit semester"
                 >
                   <EditIcon fontSize="small" className="text-gray-400 hover:text-primary-400" />
@@ -501,7 +517,7 @@ export default function InstitutionContent() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium mb-2" style={{ color: "var(--color-text-secondary)" }}>
               Subject
             </label>
             <div className="flex items-center gap-2">
@@ -521,7 +537,7 @@ export default function InstitutionContent() {
               {selectedSubjectId && (
                 <button
                   onClick={openEditSubjectModal}
-                  className="p-2 rounded-lg hover:bg-dark-hover transition-colors"
+                  className="icon-btn p-2"
                   title="Edit subject"
                 >
                   <EditIcon fontSize="small" className="text-gray-400 hover:text-primary-400" />
@@ -588,19 +604,25 @@ export default function InstitutionContent() {
                   type="button"
                   onClick={(event) => handleDownloadNote(event, note._id)}
                   disabled={downloadingNoteId === note._id}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="icon-btn p-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Download note"
                 >
                   <DownloadIcon fontSize="small" className="text-gray-400" />
                 </button>
-                <Link
-                  to={`/notes/${note._id}`}
-                  state={{ returnTo: selectedContentPath }}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
-                  title="Open note"
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setSelectedNoteForEdit(note);
+                    setEditNoteForm({ title: note.title || "", description: note.description || "" });
+                    setEditNoteModalOpen(true);
+                  }}
+                  className="icon-btn p-2 rounded-lg"
+                  title="Edit note details"
                 >
                   <EditIcon fontSize="small" className="text-gray-400" />
-                </Link>
+                </button>
                 <button
                   type="button"
                   onClick={(event) => {
@@ -668,6 +690,60 @@ export default function InstitutionContent() {
       </Dialog>
 
       <Dialog
+        open={editNoteModalOpen}
+        onClose={() => setEditNoteModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Edit Note Details</h2>
+            <button
+              onClick={() => setEditNoteModalOpen(false)}
+              className="icon-btn p-2"
+            >
+              <CloseIcon />
+            </button>
+          </div>
+          <form onSubmit={handleUpdateNote} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Title</label>
+              <input
+                type="text"
+                value={editNoteForm.title}
+                onChange={(e) => setEditNoteForm({ ...editNoteForm, title: e.target.value })}
+                className="input-field"
+                placeholder="Note Title"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Description (Optional)</label>
+              <textarea
+                value={editNoteForm.description}
+                onChange={(e) => setEditNoteForm({ ...editNoteForm, description: e.target.value })}
+                className="input-field resize-none"
+                rows={3}
+                placeholder="Brief description"
+              />
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setEditNoteModalOpen(false)}
+                className="btn-secondary"
+              >
+                Cancel
+              </button>
+              <button type="submit" className="btn-primary">
+                Save Changes
+              </button>
+            </div>
+          </form>
+        </div>
+      </Dialog>
+
+      <Dialog
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         maxWidth="sm"
@@ -678,7 +754,7 @@ export default function InstitutionContent() {
             <h2 className="text-xl font-semibold">Create New Note</h2>
             <button
               onClick={() => setModalOpen(false)}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="icon-btn p-2"
             >
               <CloseIcon />
             </button>
@@ -719,7 +795,7 @@ export default function InstitutionContent() {
             <h2 className="text-xl font-semibold">Add Semester</h2>
             <button
               onClick={() => setSemesterModalOpen(false)}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="icon-btn p-2"
             >
               <CloseIcon />
             </button>
@@ -805,7 +881,7 @@ export default function InstitutionContent() {
             <h2 className="text-xl font-semibold">Add Subject</h2>
             <button
               onClick={() => setSubjectModalOpen(false)}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="icon-btn p-2"
             >
               <CloseIcon />
             </button>
@@ -910,7 +986,7 @@ export default function InstitutionContent() {
             <h2 className="text-xl font-semibold">Edit Semester</h2>
             <button
               onClick={() => setEditSemesterModalOpen(false)}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="icon-btn p-2"
             >
               <CloseIcon />
             </button>
@@ -996,7 +1072,7 @@ export default function InstitutionContent() {
             <h2 className="text-xl font-semibold">Edit Subject</h2>
             <button
               onClick={() => setEditSubjectModalOpen(false)}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="icon-btn p-2"
             >
               <CloseIcon />
             </button>

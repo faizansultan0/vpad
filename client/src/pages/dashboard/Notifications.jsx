@@ -79,7 +79,7 @@ export default function Notifications() {
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">
+          <h1 className="text-2xl font-bold" style={{ color: "var(--color-text)" }}>
             Notifications
           </h1>
           <p className="text-gray-400">
@@ -102,7 +102,7 @@ export default function Notifications() {
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
             filter === "all"
               ? "bg-primary-100 dark:bg-primary-600/20 text-primary-600 dark:text-primary-300"
-              : "bg-dark-surface text-gray-400 hover:bg-gray-200 hover:bg-dark-hover"
+              : "bg-light-surface dark:bg-dark-surface text-gray-400 hover:bg-light-hover dark:hover:bg-dark-hover"
           }`}
         >
           All
@@ -112,7 +112,7 @@ export default function Notifications() {
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
             filter === "unread"
               ? "bg-primary-100 dark:bg-primary-600/20 text-primary-600 dark:text-primary-300"
-              : "bg-dark-surface text-gray-400 hover:bg-gray-200 hover:bg-dark-hover"
+              : "bg-light-surface dark:bg-dark-surface text-gray-400 hover:bg-light-hover dark:hover:bg-dark-hover"
           }`}
         >
           Unread
@@ -151,7 +151,7 @@ export default function Notifications() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="font-medium text-white">
+                        <p className="font-medium" style={{ color: "var(--color-text)" }}>
                           {notification.title}
                         </p>
                         <p className="text-sm text-gray-400 mt-1">
@@ -184,7 +184,7 @@ export default function Notifications() {
                         {!notification.isRead && (
                           <button
                             onClick={() => markAsRead(notification._id)}
-                            className="p-1.5 hover:bg-gray-100 hover:bg-dark-hover rounded-lg"
+                            className="p-1.5 hover:bg-light-hover dark:hover:bg-dark-hover rounded-lg"
                             title="Mark as read"
                           >
                             <CheckIcon
@@ -223,7 +223,7 @@ export default function Notifications() {
           {pagination && pagination.page < pagination.totalPages && (
             <button
               onClick={() => fetchNotifications({ page: pagination.page + 1 })}
-              className="w-full py-3 text-center text-primary-600 hover:bg-dark-hover rounded-xl"
+              className="w-full py-3 text-center text-primary-600 hover:bg-light-hover dark:hover:bg-dark-hover rounded-xl"
             >
               Load More
             </button>
@@ -235,7 +235,7 @@ export default function Notifications() {
             className="text-gray-600 mb-4"
             style={{ fontSize: 64 }}
           />
-          <h3 className="text-xl font-semibold text-white mb-2">
+          <h3 className="text-xl font-semibold mb-2" style={{ color: "var(--color-text)" }}>
             {filter === "unread"
               ? "No Unread Notifications"
               : "No Notifications"}

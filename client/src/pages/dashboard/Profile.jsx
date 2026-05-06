@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAuthStore } from "../../store";
+import { useAuthStore, useThemeStore } from "../../store";
 import toast from "react-hot-toast";
 import Avatar from "@mui/material/Avatar";
 import CameraAltIcon from "@mui/icons-material/CameraAlt";
@@ -13,6 +13,10 @@ const PASSWORD_POLICY = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 export default function Profile() {
   const { user, updateProfile, updateProfilePicture, updatePassword } =
     useAuthStore();
+  const themePreference = useThemeStore((s) => s.preference);
+  const setThemePreference = useThemeStore((s) => s.setPreference);
+  // pendingTheme tracks the UI selection; applied only on Save
+  const [pendingTheme, setPendingTheme] = useState(themePreference);
   const [activeTab, setActiveTab] = useState("profile");
   const [isLoading, setIsLoading] = useState(false);
   const [profileData, setProfileData] = useState({ name: user?.name || "" });
@@ -77,7 +81,9 @@ export default function Profile() {
     e.preventDefault();
     setIsLoading(true);
     try {
-      await updateProfile({ preferences });
+      // Apply theme NOW — only when user clicks Save
+      setThemePreference(pendingTheme);
+      await updateProfile({ preferences: { ...preferences, theme: pendingTheme } });
       toast.success("Preferences saved");
     } catch (error) {
       toast.error(error.response?.data?.message || "Update failed");
@@ -107,7 +113,7 @@ export default function Profile() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">
+        <h1 className="text-2xl font-bold" style={{ color: "var(--color-text)" }}>
           Account Settings
         </h1>
         <p className="text-gray-400">
@@ -116,7 +122,7 @@ export default function Profile() {
       </div>
 
       <div className="card">
-        <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6 pb-6 border-b border-white/[0.06]">
+        <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6 pb-6 border-b border-light-border dark:border-white/[0.06]">
           <div className="relative">
             <Avatar
               src={user?.profilePicture?.url}
@@ -136,7 +142,7 @@ export default function Profile() {
             </label>
           </div>
           <div className="text-center sm:text-left">
-            <h2 className="text-xl font-semibold text-white">
+            <h2 className="text-xl font-semibold" style={{ color: "var(--color-text)" }}>
               {user?.name}
             </h2>
             <p className="text-gray-400">{user?.email}</p>
@@ -146,7 +152,7 @@ export default function Profile() {
           </div>
         </div>
 
-        <div className="flex flex-wrap border-b border-white/[0.06] mt-4 gap-y-2">
+        <div className="flex flex-wrap border-b border-light-border dark:border-white/[0.06] mt-4 gap-y-2">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
@@ -156,8 +162,9 @@ export default function Profile() {
                 className={`flex items-center space-x-2 px-4 py-3 border-b-2 transition-colors ${
                   activeTab === tab.id
                     ? "border-primary-600 text-primary-600"
-                    : "border-transparent text-gray-400 hover:text-white"
-                }`}
+                    : "border-transparent hover:border-primary-400/40"
+                  }`}
+                  style={{ color: activeTab === tab.id ? undefined : "var(--color-text-muted)" }}
               >
                 <Icon fontSize="small" />
                 <span className="font-medium">{tab.label}</span>
@@ -170,7 +177,7 @@ export default function Profile() {
           {activeTab === "profile" && (
             <form onSubmit={handleProfileUpdate} className="space-y-4 max-w-md">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium mb-2" style={{ color: "var(--color-text-secondary)" }}>
                   Full Name
                 </label>
                 <input
@@ -184,7 +191,7 @@ export default function Profile() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium mb-2" style={{ color: "var(--color-text-secondary)" }}>
                   Email
                 </label>
                 <div className="relative">
@@ -196,7 +203,7 @@ export default function Profile() {
                     type="email"
                     value={user?.email}
                     disabled
-                    className="input-field pl-10 bg-dark-surface"
+                    className="input-field pl-10"
                   />
                 </div>
                 <p className="text-xs text-gray-400 mt-1">
@@ -219,7 +226,7 @@ export default function Profile() {
               className="space-y-4 max-w-md"
             >
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium mb-2" style={{ color: "var(--color-text-secondary)" }}>
                   Current Password
                 </label>
                 <input
@@ -236,7 +243,7 @@ export default function Profile() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium mb-2" style={{ color: "var(--color-text-secondary)" }}>
                   New Password
                 </label>
                 <input
@@ -257,7 +264,7 @@ export default function Profile() {
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium mb-2" style={{ color: "var(--color-text-secondary)" }}>
                   Confirm New Password
                 </label>
                 <input
@@ -289,7 +296,7 @@ export default function Profile() {
               className="space-y-6 max-w-md"
             >
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium mb-2" style={{ color: "var(--color-text-secondary)" }}>
                   Language
                 </label>
                 <select
@@ -304,14 +311,12 @@ export default function Profile() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium mb-2" style={{ color: "var(--color-text-secondary)" }}>
                   Theme
                 </label>
                 <select
-                  value={preferences.theme}
-                  onChange={(e) =>
-                    setPreferences({ ...preferences, theme: e.target.value })
-                  }
+                  value={pendingTheme}
+                  onChange={(e) => setPendingTheme(e.target.value)}
                   className="input-field"
                 >
                   <option value="light">Light</option>
@@ -320,7 +325,7 @@ export default function Profile() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-3">
+                <label className="block text-sm font-medium mb-3" style={{ color: "var(--color-text-secondary)" }}>
                   Notifications
                 </label>
                 <div className="space-y-3">
@@ -335,9 +340,9 @@ export default function Profile() {
                   ].map((item) => (
                     <label
                       key={item.key}
-                      className="flex items-center justify-between p-3 bg-dark-surface rounded-lg"
+                      className="flex items-center justify-between p-3 bg-light-surface dark:bg-dark-surface rounded-lg"
                     >
-                      <span className="text-sm text-gray-300">
+                      <span className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
                         {item.label}
                       </span>
                       <input

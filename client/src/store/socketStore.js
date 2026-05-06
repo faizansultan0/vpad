@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { io } from "socket.io-client";
 
 const SOCKET_URL =
   import.meta.env.VITE_SOCKET_URL ||
@@ -12,13 +11,14 @@ const useSocketStore = create((set, get) => ({
   activeUsers: [],
   typingUsers: [],
 
-  connect: (token) => {
+  connect: async (token) => {
     const { socket } = get();
     if (socket?.connected) return;
 
+    const { io } = await import("socket.io-client");
     const newSocket = io(SOCKET_URL, {
       auth: { token },
-      transports: ["websocket", "polling"],
+      transports: ["polling", "websocket"],
     });
 
     newSocket.on("connect", () => {
