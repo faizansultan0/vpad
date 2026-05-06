@@ -76,7 +76,7 @@ export default function PublicLayout() {
                 <>
                   <Link
                     to="/login"
-                    className="text-sm font-medium text-gray-400 hover:text-primary-300 transition-colors"
+                    className="inline-flex items-center text-sm font-medium text-gray-400 hover:text-primary-300 transition-colors"
                   >
                     Sign In
                   </Link>

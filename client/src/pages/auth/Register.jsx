@@ -89,7 +89,7 @@ export default function Register() {
                 <span className="ml-2 text-sm text-gray-400">I agree to the <Link to="/terms" className="text-primary-400 hover:underline">Terms of Service</Link> and <Link to="/privacy" className="text-primary-400 hover:underline">Privacy Policy</Link></span>
               </motion.div>
               <motion.div custom={5} variants={fv} initial="hidden" animate="visible">
-                <button type="submit" disabled={isLoading} className="btn-primary btn-glow w-full flex items-center justify-center">{isLoading ? <div className="spinner w-5 h-5" /> : "Create Account"}</button>
+                <button type="submit" disabled={isLoading} className="btn-primary btn-glow w-full flex items-center justify-center">{isLoading ? <div className="spinner w-5 h-5" style={{ borderColor: "rgba(255,255,255,0.3)", borderTopColor: "#fff" }} /> : "Create Account"}</button>
               </motion.div>
             </form>
             <motion.div custom={6} variants={fv} initial="hidden" animate="visible" className="mt-5 text-center">

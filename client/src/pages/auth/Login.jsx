@@ -93,7 +93,7 @@ export default function Login() {
               </motion.div>
               <motion.div custom={3} variants={fieldVariants} initial="hidden" animate="visible">
                 <button type="submit" disabled={isLoading} className="btn-primary btn-glow w-full flex items-center justify-center">
-                  {isLoading ? <div className="spinner w-5 h-5" /> : "Sign In"}
+                  {isLoading ? <div className="spinner w-5 h-5" style={{ borderColor: "rgba(255,255,255,0.3)", borderTopColor: "#fff" }} /> : "Sign In"}
                 </button>
               </motion.div>
             </form>

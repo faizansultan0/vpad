@@ -153,6 +153,7 @@ const extractTextFromImage = async (imageUrl) => {
 const generateQuizWithOpenAI = async (content, options = {}) => {
   const {
     questionCount = 5,
+    shortQuestionCount = 0,
     difficulty = "medium",
     includeTopics = [],
   } = options;
@@ -164,19 +165,24 @@ const generateQuizWithOpenAI = async (content, options = {}) => {
         )}.`
       : "";
 
+  const questionMix = [];
+  if (questionCount > 0) questionMix.push(`${questionCount} multiple-choice questions (type "mcq")`);
+  if (shortQuestionCount > 0) questionMix.push(`${shortQuestionCount} short-answer questions (type "short")`);
+  const questionMixInstruction = questionMix.join(" and ");
+
   const response = await openai.chat.completions.create({
     model: "gpt-3.5-turbo",
     messages: [
       {
         role: "system",
-        content: `You are an educational quiz generator. Create a quiz based on the provided notes. Generate ${questionCount} questions with ${difficulty} difficulty. ${topicsInstruction} Return the quiz in JSON format with this structure: { "questions": [{ "question": "...", "options": ["A", "B", "C", "D"], "correctAnswer": 0, "explanation": "...", "difficulty": "easy|medium|hard" }] }`,
+        content: `You are an educational quiz generator. Create a quiz based on the provided notes. Generate ${questionMixInstruction} with ${difficulty} difficulty. ${topicsInstruction} Return the quiz in JSON format with this structure: { "questions": [{ "type": "mcq", "question": "...", "options": ["A", "B", "C", "D"], "correctAnswer": 0, "explanation": "...", "difficulty": "easy|medium|hard" }, { "type": "short", "question": "...", "options": [], "correctAnswer": "Model answer text here", "explanation": "...", "difficulty": "easy|medium|hard" }] }. For MCQ questions, correctAnswer is the zero-based index of the correct option. For short questions, correctAnswer is the model answer text string. Always include the "type" field.`,
       },
       {
         role: "user",
         content: content,
       },
     ],
-    max_tokens: 2000,
+    max_tokens: 3000,
     temperature: 0.7,
   });
 
@@ -193,6 +199,7 @@ const generateQuizWithOpenAI = async (content, options = {}) => {
 const generateQuizWithGemini = async (content, options = {}) => {
   const {
     questionCount = 5,
+    shortQuestionCount = 0,
     difficulty = "medium",
     includeTopics = [],
   } = options;
@@ -204,8 +211,13 @@ const generateQuizWithGemini = async (content, options = {}) => {
         )}.`
       : "";
 
+  const questionMix = [];
+  if (questionCount > 0) questionMix.push(`${questionCount} multiple-choice questions (type "mcq")`);
+  if (shortQuestionCount > 0) questionMix.push(`${shortQuestionCount} short-answer questions (type "short")`);
+  const questionMixInstruction = questionMix.join(" and ");
+
   const model = gemini.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
-  const prompt = `You are an educational quiz generator. Create a quiz based on the provided notes. Generate ${questionCount} questions with ${difficulty} difficulty. ${topicsInstruction} Return the quiz in JSON format with this structure: { "questions": [{ "question": "...", "options": ["A", "B", "C", "D"], "correctAnswer": 0, "explanation": "...", "difficulty": "easy|medium|hard" }] }\n\nNotes:\n${content}`;
+  const prompt = `You are an educational quiz generator. Create a quiz based on the provided notes. Generate ${questionMixInstruction} with ${difficulty} difficulty. ${topicsInstruction} Return the quiz in JSON format with this structure: { "questions": [{ "type": "mcq", "question": "...", "options": ["A", "B", "C", "D"], "correctAnswer": 0, "explanation": "...", "difficulty": "easy|medium|hard" }, { "type": "short", "question": "...", "options": [], "correctAnswer": "Model answer text here", "explanation": "...", "difficulty": "easy|medium|hard" }] }. For MCQ questions, correctAnswer is the zero-based index of the correct option. For short questions, correctAnswer is the model answer text string. Always include the "type" field.\n\nNotes:\n${content}`;
 
   const result = await model.generateContent(prompt);
   const quizText = result.response.text();

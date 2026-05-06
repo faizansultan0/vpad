@@ -245,6 +245,11 @@ export default function NoteEditor() {
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [quizResult, setQuizResult] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [quizDifficulty, setQuizDifficulty] = useState("medium");
+  const [quizMcqCount, setQuizMcqCount] = useState(5);
+  const [quizShortCount, setQuizShortCount] = useState(0);
+  const [showQuizConfig, setShowQuizConfig] = useState(true);
+  const [quizIsNewRequest, setQuizIsNewRequest] = useState(false);
   const [commentInput, setCommentInput] = useState("");
   const [audioBlob, setAudioBlob] = useState(null);
   const [audioPreviewUrl, setAudioPreviewUrl] = useState("");
@@ -689,8 +694,9 @@ export default function NoteEditor() {
     setAiLoading(true);
     try {
       const result = await generateQuiz(noteId, {
-        questionCount: 5,
-        difficulty: "medium",
+        questionCount: quizMcqCount,
+        shortQuestionCount: quizShortCount,
+        difficulty: quizDifficulty,
         regenerate,
       });
 
@@ -703,12 +709,25 @@ export default function NoteEditor() {
         )[0];
 
       setQuiz(result);
+      setShowQuizConfig(false);
 
       if (latestAttempt && !regenerate) {
         const restoredAnswers = latestAttempt.answers.reduce(
           (accumulator, answer, index) => {
-            if (Number.isInteger(answer) && answer >= 0) {
-              accumulator[index] = answer;
+            const question = result?.questions?.[index];
+            const questionType = question?.type || "mcq";
+
+            if (questionType === "short") {
+              if (typeof answer === "object" && answer !== null) {
+                accumulator[index] = answer;
+              } else {
+                accumulator[index] = { text: String(answer || ""), correct: false };
+              }
+            } else {
+              const numAnswer = typeof answer === "object" ? -1 : Number(answer);
+              if (Number.isInteger(numAnswer) && numAnswer >= 0) {
+                accumulator[index] = numAnswer;
+              }
             }
             return accumulator;
           },
@@ -745,12 +764,37 @@ export default function NoteEditor() {
   const handleSubmitQuiz = async () => {
     if (!quiz?.questions?.length) return;
 
-    const answers = quiz.questions.map((_, questionIndex) => {
+    const answers = quiz.questions.map((q, questionIndex) => {
+      const questionType = q.type || "mcq";
+
+      if (questionType === "short") {
+        const shortAnswer = selectedAnswers[questionIndex];
+        return {
+          text: typeof shortAnswer === "object" ? shortAnswer?.text || "" : String(shortAnswer || ""),
+          correct: false,
+        };
+      }
+
       const answer = selectedAnswers[questionIndex];
       return Number.isInteger(answer) ? answer : -1;
     });
 
-    if (answers.some((answer) => answer < 0)) {
+    // Check MCQs are all answered
+    const mcqUnanswered = quiz.questions.some((q, i) => {
+      if ((q.type || "mcq") === "mcq" && answers[i] < 0) return true;
+      return false;
+    });
+
+    // Check short questions have text
+    const shortUnanswered = quiz.questions.some((q, i) => {
+      if ((q.type || "mcq") === "short") {
+        const ans = answers[i];
+        return !ans?.text?.trim();
+      }
+      return false;
+    });
+
+    if (mcqUnanswered || shortUnanswered) {
       toast.error("Please answer all questions before submitting.");
       return;
     }
@@ -1270,7 +1314,22 @@ export default function NoteEditor() {
         </MenuItem>
         <MenuItem
           onClick={() => {
-            handleGenerateQuiz();
+            const hasExistingQuiz =
+              Array.isArray(currentNote?.quiz?.questions) &&
+              currentNote.quiz.questions.length > 0;
+
+            if (hasExistingQuiz) {
+              // Load existing quiz directly — skip config
+              setShowQuizConfig(false);
+              setQuizIsNewRequest(false);
+              setQuizModal(true);
+              handleGenerateQuiz(false);
+            } else {
+              // No quiz yet — show config
+              setQuizIsNewRequest(false);
+              setShowQuizConfig(true);
+              setQuizModal(true);
+            }
             setAnchorEl(null);
           }}
           disabled={aiLoading}
@@ -1465,7 +1524,7 @@ export default function NoteEditor() {
 
       <Dialog
         open={quizModal}
-        onClose={() => setQuizModal(false)}
+        onClose={() => { setQuizModal(false); setShowQuizConfig(true); setQuizIsNewRequest(false); }}
         maxWidth="md"
         fullWidth
       >
@@ -1473,27 +1532,112 @@ export default function NoteEditor() {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold">Practice Quiz</h2>
             <div className="flex items-center gap-2">
+              {quiz && !showQuizConfig && (
+                <button
+                  onClick={() => {
+                    setQuizIsNewRequest(true);
+                    setShowQuizConfig(true);
+                    setQuiz(null);
+                    setSelectedAnswers({});
+                    setQuizSubmitted(false);
+                    setQuizResult(null);
+                  }}
+                  className="btn-secondary text-sm py-2"
+                  disabled={aiLoading}
+                >
+                  New Quiz
+                </button>
+              )}
               <button
-                onClick={() => handleGenerateQuiz(true)}
-                className="btn-secondary text-sm py-2"
-                disabled={aiLoading}
-              >
-                Regenerate
-              </button>
-              <button
-                onClick={() => setQuizModal(false)}
+                onClick={() => { setQuizModal(false); setShowQuizConfig(true); setQuizIsNewRequest(false); }}
                 className="icon-btn p-2"
               >
                 <CloseIcon />
               </button>
             </div>
           </div>
+
+          {/* Quiz Config Panel */}
+          {showQuizConfig && !aiLoading && (
+            <div className="space-y-5 mb-6">
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: "var(--color-text)" }}>Difficulty Level</label>
+                <div className="flex gap-2">
+                  {["easy", "medium", "hard"].map((level) => (
+                    <button
+                      key={level}
+                      type="button"
+                      onClick={() => setQuizDifficulty(level)}
+                      className={`px-4 py-2 rounded-xl text-sm font-medium capitalize transition-all ${
+                        quizDifficulty === level
+                          ? level === "easy"
+                            ? "bg-green-600/20 text-green-300 border border-green-500/40"
+                            : level === "medium"
+                              ? "bg-amber-600/20 text-amber-300 border border-amber-500/40"
+                              : "bg-red-600/20 text-red-300 border border-red-500/40"
+                          : "border border-gray-200 dark:border-white/[0.06] hover:border-primary-300"
+                      }`}
+                    >
+                      {level}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: "var(--color-text)" }}>
+                  MCQ Questions: <span className="text-primary-400 font-bold">{quizMcqCount}</span>
+                </label>
+                <input
+                  type="range"
+                  min={0}
+                  max={15}
+                  value={quizMcqCount}
+                  onChange={(e) => setQuizMcqCount(Number(e.target.value))}
+                  className="w-full accent-primary-500"
+                />
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>0</span><span>15</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: "var(--color-text)" }}>
+                  Short Answer Questions: <span className="text-primary-400 font-bold">{quizShortCount}</span>
+                </label>
+                <input
+                  type="range"
+                  min={0}
+                  max={10}
+                  value={quizShortCount}
+                  onChange={(e) => setQuizShortCount(Number(e.target.value))}
+                  className="w-full accent-primary-500"
+                />
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>0</span><span>10</span>
+                </div>
+              </div>
+
+              {quizMcqCount === 0 && quizShortCount === 0 && (
+                <p className="text-sm text-amber-400">Please select at least 1 question.</p>
+              )}
+
+              <button
+                onClick={() => handleGenerateQuiz(quizIsNewRequest)}
+                className="btn-primary w-full"
+                disabled={aiLoading || (quizMcqCount === 0 && quizShortCount === 0)}
+              >
+                Generate Quiz
+              </button>
+            </div>
+          )}
+
           {aiLoading ? (
             <div className="flex flex-col justify-center items-center py-12">
               <div className="spinner mb-4" />
-              <span className="text-gray-400">Processing...</span>
+              <span className="text-gray-400">Generating your quiz...</span>
             </div>
-          ) : (
+          ) : !showQuizConfig && (
             <>
               {quizResult && (
                 <div className="mb-4 p-3 rounded-xl bg-primary-50 dark:bg-primary-600/20 text-primary-800 dark:text-primary-200 text-sm font-medium">
@@ -1501,49 +1645,125 @@ export default function NoteEditor() {
                   {quizResult.percentage}%)
                 </div>
               )}
-              {quiz?.questions?.map((q, i) => (
-                <div
-                  key={i}
-                  className="mb-6 p-4 bg-light-surface dark:bg-dark-surface rounded-xl"
-                >
-                  <p className="font-medium mb-3" style={{ color: "var(--color-text)" }}>
-                    {i + 1}. {q.question}
-                  </p>
-                  <div className="space-y-2">
-                    {q.options?.map((opt, j) => (
-                      <button
-                        key={j}
-                        type="button"
-                        onClick={() => handleSelectOption(i, j)}
-                        className={`w-full text-left p-2 rounded-lg border transition-colors ${
-                          quizSubmitted
-                            ? j === q.correctAnswer
-                              ? "border-green-500 bg-green-50 text-green-900 dark:bg-green-900/30 dark:text-green-100"
-                              : selectedAnswers[i] === j
-                                ? "border-red-500 bg-red-50 text-red-900 dark:bg-red-900/30 dark:text-red-100"
-                                : "border-gray-200 dark:border-white/[0.06]"
-                            : selectedAnswers[i] === j
-                              ? "border-primary-500 bg-primary-50 dark:bg-primary-600/20 text-primary-900 dark:text-primary-100"
-                              : "border-gray-200 dark:border-white/[0.06] hover:border-primary-300"
-                        }`}
-                        disabled={quizSubmitted}
-                      >
-                        {String.fromCharCode(65 + j)}. {opt}
-                      </button>
-                    ))}
-                  </div>
-                  {quizSubmitted && q.explanation && (
-                    <p className="text-sm text-gray-400 mt-2">
-                      💡 {q.explanation}
-                    </p>
-                  )}
-                </div>
-              ))}
+
+              <div className="max-h-[60vh] overflow-auto space-y-0">
+                {quiz?.questions?.map((q, i) => {
+                  const questionType = q.type || "mcq";
+
+                  return (
+                    <div
+                      key={i}
+                      className="mb-6 p-4 bg-light-surface dark:bg-dark-surface rounded-xl"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <p className="font-medium" style={{ color: "var(--color-text)" }}>
+                          {i + 1}. {q.question}
+                        </p>
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ml-3 ${
+                          questionType === "short"
+                            ? "bg-blue-600/20 text-blue-300"
+                            : "bg-purple-600/20 text-purple-300"
+                        }`}>
+                          {questionType === "short" ? "Short" : "MCQ"}
+                        </span>
+                      </div>
+
+                      {questionType === "mcq" ? (
+                        <div className="space-y-2">
+                          {q.options?.map((opt, j) => (
+                            <button
+                              key={j}
+                              type="button"
+                              onClick={() => handleSelectOption(i, j)}
+                              className={`w-full text-left p-2 rounded-lg border transition-colors ${
+                                quizSubmitted
+                                  ? j === q.correctAnswer
+                                    ? "border-green-500 bg-green-50 text-green-900 dark:bg-green-900/30 dark:text-green-100"
+                                    : selectedAnswers[i] === j
+                                      ? "border-red-500 bg-red-50 text-red-900 dark:bg-red-900/30 dark:text-red-100"
+                                      : "border-gray-200 dark:border-white/[0.06]"
+                                  : selectedAnswers[i] === j
+                                    ? "border-primary-500 bg-primary-50 dark:bg-primary-600/20 text-primary-900 dark:text-primary-100"
+                                    : "border-gray-200 dark:border-white/[0.06] hover:border-primary-300"
+                              }`}
+                              disabled={quizSubmitted}
+                            >
+                              {String.fromCharCode(65 + j)}. {opt}
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        /* Short answer question */
+                        <div className="space-y-2">
+                          <textarea
+                            value={
+                              typeof selectedAnswers[i] === "object"
+                                ? selectedAnswers[i]?.text || ""
+                                : selectedAnswers[i] || ""
+                            }
+                            onChange={(e) => {
+                              if (quizSubmitted) return;
+                              setSelectedAnswers((prev) => ({
+                                ...prev,
+                                [i]: { text: e.target.value, correct: false },
+                              }));
+                            }}
+                            className="input-field resize-none"
+                            rows={3}
+                            placeholder="Type your answer here..."
+                            disabled={quizSubmitted}
+                          />
+                          {quizSubmitted && (
+                            <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-500/30">
+                              <p className="text-xs font-semibold text-blue-600 dark:text-blue-300 mb-1">Model Answer:</p>
+                              <p className="text-sm text-blue-800 dark:text-blue-100">{q.correctAnswer}</p>
+                              <div className="mt-2 flex items-center gap-2">
+                                <span className="text-xs text-gray-500">Was your answer correct?</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const current = selectedAnswers[i];
+                                    const currentCorrect = typeof current === "object" ? current?.correct : false;
+                                    setSelectedAnswers((prev) => ({
+                                      ...prev,
+                                      [i]: {
+                                        text: typeof current === "object" ? current?.text || "" : String(current || ""),
+                                        correct: !currentCorrect,
+                                      },
+                                    }));
+                                  }}
+                                  className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${
+                                    (typeof selectedAnswers[i] === "object" && selectedAnswers[i]?.correct)
+                                      ? "bg-green-600/20 text-green-300 border border-green-500/40"
+                                      : "bg-red-600/20 text-red-300 border border-red-500/40"
+                                  }`}
+                                >
+                                  {(typeof selectedAnswers[i] === "object" && selectedAnswers[i]?.correct)
+                                    ? "✓ Correct"
+                                    : "✗ Incorrect"}
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {quizSubmitted && q.explanation && (
+                        <p className="text-sm text-gray-400 mt-2">
+                          💡 {q.explanation}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
               {quiz?.questions?.length > 0 && !quizSubmitted && (
                 <div className="flex justify-end mt-4">
                   <button
                     onClick={handleSubmitQuiz}
                     className="btn-primary"
+                    disabled={aiLoading}
                   >
                     Submit Quiz
                   </button>

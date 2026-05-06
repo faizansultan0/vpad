@@ -80,6 +80,11 @@ const attachmentSchema = new mongoose.Schema({
 
 const quizQuestionSchema = new mongoose.Schema(
   {
+    type: {
+      type: String,
+      enum: ["mcq", "short"],
+      default: "mcq",
+    },
     question: {
       type: String,
       required: true,
@@ -89,9 +94,8 @@ const quizQuestionSchema = new mongoose.Schema(
       default: [],
     },
     correctAnswer: {
-      type: Number,
+      type: mongoose.Schema.Types.Mixed,
       required: true,
-      min: 0,
     },
     explanation: String,
     difficulty: {
@@ -111,7 +115,7 @@ const quizAttemptSchema = new mongoose.Schema(
       required: true,
     },
     answers: {
-      type: [Number],
+      type: [mongoose.Schema.Types.Mixed],
       default: [],
     },
     score: {

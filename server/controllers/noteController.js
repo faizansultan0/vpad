@@ -23,6 +23,7 @@ const buildHash = (value) => {
 const buildQuizOptionsHash = (options = {}) => {
   const normalized = {
     questionCount: Number(options.questionCount) || 5,
+    shortQuestionCount: Number(options.shortQuestionCount) || 0,
     difficulty: options.difficulty || "medium",
     includeTopics: Array.isArray(options.includeTopics)
       ? [...options.includeTopics].map((topic) => topic.trim()).sort()
@@ -36,22 +37,54 @@ const normalizeQuizQuestions = (quiz) => {
   const questions = Array.isArray(quiz?.questions) ? quiz.questions : [];
 
   return questions
-    .map((question) => ({
-      question: question?.question,
-      options: Array.isArray(question?.options) ? question.options : [],
-      correctAnswer: Number(question?.correctAnswer),
-      explanation: question?.explanation || "",
-      difficulty: question?.difficulty || "medium",
-    }))
-    .filter(
-      (question) =>
-        typeof question.question === "string" &&
-        question.question.trim().length > 0 &&
+    .map((question) => {
+      const type = question?.type === "short" ? "short" : "mcq";
+
+      if (type === "short") {
+        return {
+          type: "short",
+          question: question?.question,
+          options: [],
+          correctAnswer:
+            typeof question?.correctAnswer === "string"
+              ? question.correctAnswer
+              : String(question?.correctAnswer || ""),
+          explanation: question?.explanation || "",
+          difficulty: question?.difficulty || "medium",
+        };
+      }
+
+      return {
+        type: "mcq",
+        question: question?.question,
+        options: Array.isArray(question?.options) ? question.options : [],
+        correctAnswer: Number(question?.correctAnswer),
+        explanation: question?.explanation || "",
+        difficulty: question?.difficulty || "medium",
+      };
+    })
+    .filter((question) => {
+      if (
+        typeof question.question !== "string" ||
+        question.question.trim().length === 0
+      ) {
+        return false;
+      }
+
+      if (question.type === "short") {
+        return (
+          typeof question.correctAnswer === "string" &&
+          question.correctAnswer.trim().length > 0
+        );
+      }
+
+      return (
         question.options.length >= 2 &&
         Number.isInteger(question.correctAnswer) &&
         question.correctAnswer >= 0 &&
-        question.correctAnswer < question.options.length,
-    );
+        question.correctAnswer < question.options.length
+      );
+    });
 };
 
 const createNote = asyncHandler(async (req, res) => {
@@ -627,6 +660,7 @@ const extractTextFromImage = asyncHandler(async (req, res) => {
 const generateQuiz = asyncHandler(async (req, res) => {
   const {
     questionCount,
+    shortQuestionCount,
     difficulty,
     includeTopics,
     regenerate = false,
@@ -650,6 +684,7 @@ const generateQuiz = asyncHandler(async (req, res) => {
   const sourceHash = buildHash(plainText);
   const optionsHash = buildQuizOptionsHash({
     questionCount,
+    shortQuestionCount,
     difficulty,
     includeTopics,
   });
@@ -675,6 +710,7 @@ const generateQuiz = asyncHandler(async (req, res) => {
 
   const result = await aiService.generateQuiz(plainText, {
     questionCount,
+    shortQuestionCount,
     difficulty,
     includeTopics,
   });
@@ -738,11 +774,36 @@ const submitQuizAttempt = asyncHandler(async (req, res) => {
   }
 
   const totalQuestions = note.quiz.questions.length;
+  const mcqQuestions = note.quiz.questions.filter(
+    (q) => (q.type || "mcq") === "mcq",
+  );
+  const mcqCount = mcqQuestions.length;
   let score = 0;
 
   const sanitizedAnswers = answers.map((answer, index) => {
-    const parsedAnswer = Number(answer);
     const question = note.quiz.questions[index];
+    const questionType = question.type || "mcq";
+
+    if (questionType === "short") {
+      // Short answers: store user's text, mark self-graded correct if flagged
+      const userText =
+        typeof answer === "object" && answer !== null
+          ? String(answer.text || "")
+          : String(answer || "");
+      const selfGraded =
+        typeof answer === "object" && answer !== null
+          ? Boolean(answer.correct)
+          : false;
+
+      if (selfGraded) {
+        score += 1;
+      }
+
+      return { text: userText, correct: selfGraded };
+    }
+
+    // MCQ answers
+    const parsedAnswer = Number(answer);
     const isValidAnswer =
       Number.isInteger(parsedAnswer) &&
       parsedAnswer >= 0 &&
