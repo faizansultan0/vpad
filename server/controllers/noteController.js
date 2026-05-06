@@ -22,8 +22,12 @@ const buildHash = (value) => {
 
 const buildQuizOptionsHash = (options = {}) => {
   const normalized = {
-    questionCount: Number(options.questionCount) || 5,
-    shortQuestionCount: Number(options.shortQuestionCount) || 0,
+    questionCount:
+      options.questionCount !== undefined ? Number(options.questionCount) : 5,
+    shortQuestionCount:
+      options.shortQuestionCount !== undefined
+        ? Number(options.shortQuestionCount)
+        : 0,
     difficulty: options.difficulty || "medium",
     includeTopics: Array.isArray(options.includeTopics)
       ? [...options.includeTopics].map((topic) => topic.trim()).sort()
@@ -58,7 +62,13 @@ const normalizeQuizQuestions = (quiz) => {
         type: "mcq",
         question: question?.question,
         options: Array.isArray(question?.options) ? question.options : [],
-        correctAnswer: Number(question?.correctAnswer),
+        correctAnswer:
+          typeof question?.correctAnswer === "number"
+            ? question.correctAnswer
+            : typeof question?.correctAnswer === "string" &&
+              question.correctAnswer.trim() !== ""
+            ? Number(question.correctAnswer)
+            : NaN,
         explanation: question?.explanation || "",
         difficulty: question?.difficulty || "medium",
       };
@@ -681,6 +691,15 @@ const generateQuiz = asyncHandler(async (req, res) => {
     throw new AppError("Note content is too short to generate quiz", 400);
   }
 
+  const parsedMcqCount =
+    questionCount !== undefined ? Number(questionCount) : 5;
+  const parsedShortCount =
+    shortQuestionCount !== undefined ? Number(shortQuestionCount) : 0;
+
+  if (parsedMcqCount === 0 && parsedShortCount === 0) {
+    throw new AppError("Quiz must have at least one question", 400);
+  }
+
   const sourceHash = buildHash(plainText);
   const optionsHash = buildQuizOptionsHash({
     questionCount,
@@ -803,7 +822,12 @@ const submitQuizAttempt = asyncHandler(async (req, res) => {
     }
 
     // MCQ answers
-    const parsedAnswer = Number(answer);
+    const parsedAnswer =
+      typeof answer === "number"
+        ? answer
+        : typeof answer === "string" && answer.trim() !== ""
+        ? Number(answer)
+        : NaN;
     const isValidAnswer =
       Number.isInteger(parsedAnswer) &&
       parsedAnswer >= 0 &&

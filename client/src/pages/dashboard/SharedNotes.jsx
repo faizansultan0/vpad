@@ -53,6 +53,7 @@ export default function SharedNotes() {
             >
               <Link
                 to={`/notes/${note._id}`}
+                state={{ returnTo: "/shared" }}
                 className="card block hover:shadow-lg transition-shadow"
               >
                 <div className="flex items-start justify-between mb-3">

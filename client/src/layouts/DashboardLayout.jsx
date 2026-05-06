@@ -81,8 +81,10 @@ export default function DashboardLayout() {
               const isActive = link.path === "/dashboard"
                 ? location.pathname === "/dashboard"
                 : link.path === "/institutions"
-                  ? /^\/(institutions|semesters|subjects|notes)(\/|$)/.test(location.pathname)
-                  : location.pathname.startsWith(link.path);
+                  ? /^\/(institutions|semesters|subjects|notes)(\/|$)/.test(location.pathname) && location.state?.returnTo !== "/shared"
+                  : link.path === "/shared"
+                    ? location.pathname.startsWith(link.path) || location.state?.returnTo === "/shared"
+                    : location.pathname.startsWith(link.path);
 
               const showBadge =
                 link.path === "/notifications" && unreadCount > 0;
